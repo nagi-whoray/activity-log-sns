@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS } from '@/types/database'
+import { ImageUpload, ImagePreview } from '@/components/ImageUpload'
+import { uploadMultipleImages } from '@/lib/supabase-storage'
 
 const CATEGORIES: { value: ActivityCategory; label: string; icon: string }[] = [
   { value: 'workout', label: ACTIVITY_CATEGORY_LABELS.workout, icon: '💪' },
@@ -22,13 +24,17 @@ export function ActivityLogForm() {
   const [activityDate, setActivityDate] = useState(
     new Date().toISOString().split('T')[0]
   )
+  const [images, setImages] = useState<ImagePreview[]>([])
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
+  const isCompressing = images.some((img) => img.isCompressing)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) return
+    if (isCompressing) return
 
     setLoading(true)
 
@@ -61,19 +67,35 @@ export function ActivityLogForm() {
         }
       }
 
+      // 画像をアップロード
+      let imageUrls: string[] = []
+      const imagesToUpload = images
+        .filter((img) => img.compressedFile)
+        .map((img) => img.compressedFile as File)
+
+      if (imagesToUpload.length > 0) {
+        const uploadResults = await uploadMultipleImages(imagesToUpload, user.id)
+        imageUrls = uploadResults.map((result) => result.url)
+      }
+
       const { error } = await supabase.from('activity_logs').insert({
         user_id: user.id,
         category,
         title: title.trim(),
         content: content.trim(),
         activity_date: activityDate,
+        image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
       })
 
       if (error) throw error
 
+      // プレビューURLを解放
+      images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
+
       setTitle('')
       setContent('')
       setActivityDate(new Date().toISOString().split('T')[0])
+      setImages([])
       router.refresh()
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '投稿に失敗しました'
@@ -154,12 +176,22 @@ export function ActivityLogForm() {
             </div>
           </div>
 
+          {/* 画像アップロード */}
+          <div className="space-y-2">
+            <Label>画像（任意）</Label>
+            <ImageUpload
+              images={images}
+              onImagesChange={setImages}
+              disabled={loading}
+            />
+          </div>
+
           <Button
             type="submit"
             className="w-full"
-            disabled={loading || !title.trim() || !content.trim()}
+            disabled={loading || !title.trim() || !content.trim() || isCompressing}
           >
-            {loading ? '投稿中...' : '投稿する'}
+            {loading ? '投稿中...' : isCompressing ? '画像を処理中...' : '投稿する'}
           </Button>
         </form>
       </CardContent>

@@ -26,19 +26,23 @@ components/
   ├── ui/                      # shadcn/uiの再利用可能コンポーネント
   ├── header.tsx               # [Client] ヘッダー（ログアウト機能）
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
-  ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム
-  ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示
-  └── comment-section.tsx      # [Client] コメント機能
+  ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム（画像アップロード対応）
+  ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（画像表示対応）
+  ├── comment-section.tsx      # [Client] コメント機能
+  ├── ImageUpload.tsx          # [Client] 画像アップロードコンポーネント
+  └── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
 
 lib/
   ├── supabase/
   │   ├── client.ts       # クライアントコンポーネント用
   │   └── server.ts       # サーバーコンポーネント/API用
+  ├── supabase-storage.ts # Supabase Storage操作関数
   └── utils.ts            # shadcn/ui用ユーティリティ
 
 types/
   ├── database.ts         # Supabaseテーブルスキーマ型定義
-  └── index.ts            # アプリケーション用型定義
+  ├── index.ts            # アプリケーション用型定義
+  └── storage.ts          # 画像アップロード関連の型定義
 ```
 
 ## セットアップ済みの機能
@@ -126,6 +130,39 @@ updated_at      TIMESTAMP
 #### プロフィール自動作成
 投稿時にプロフィールが存在しない場合、[activity-log-form.tsx](components/activity-log-form.tsx) で自動作成される
 
+### Supabase Storage（画像保存）
+
+#### バケット: activity-images
+- **用途**: 活動ログに添付する画像の保存
+- **公開設定**: Public（画像URLで直接アクセス可能）
+- **セットアップSQL**: [supabase-storage-setup.sql](supabase-storage-setup.sql)
+
+#### Storageポリシー
+| 操作 | 許可対象 | 条件 |
+|------|----------|------|
+| INSERT | 認証ユーザー | 自分のフォルダ（user_id）にのみ |
+| SELECT | 全員 | - |
+| DELETE | 認証ユーザー | 自分のフォルダのファイルのみ |
+| UPDATE | 認証ユーザー | 自分のフォルダのファイルのみ |
+
+#### 画像投稿機能
+
+**関連ファイル:**
+- [lib/supabase-storage.ts](lib/supabase-storage.ts) - Storage操作関数
+- [types/storage.ts](types/storage.ts) - 型定義・定数
+- [components/ImageUpload.tsx](components/ImageUpload.tsx) - アップロードUI
+- [components/ActivityImages.tsx](components/ActivityImages.tsx) - 画像表示・モーダル
+
+**機能:**
+- 画像形式: JPEG, PNG, GIF, WebP
+- 最大ファイルサイズ: 5MB
+- 最大枚数: 3枚/投稿
+- クライアント側圧縮: browser-image-compression使用（1MB以下、1920px以下）
+- 画像URLはJSON配列として `activity_logs.image_url` に保存
+
+**Next.js画像最適化:**
+- [next.config.mjs](next.config.mjs) でSupabase Storageドメインを許可設定済み
+
 ### UIコンポーネント
 
 #### shadcn/ui コンポーネント
@@ -134,6 +171,7 @@ updated_at      TIMESTAMP
 - **Card** ([components/ui/card.tsx](components/ui/card.tsx))
 - **Input** ([components/ui/input.tsx](components/ui/input.tsx))
 - **Label** ([components/ui/label.tsx](components/ui/label.tsx))
+- **Dialog** ([components/ui/dialog.tsx](components/ui/dialog.tsx)) - 画像拡大モーダル用
 
 新しいshadcn/uiコンポーネントを追加する場合：
 ```bash
@@ -371,6 +409,29 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
 5. ✅ GitHubプッシュ完了
    - コミットID: `216badd`
 
+### 画像投稿機能追加 (2026-02-04)
+1. ✅ パッケージインストール
+   - `browser-image-compression` - クライアント側画像圧縮
+   - `@radix-ui/react-dialog` - 画像拡大モーダル（shadcn/ui dialog）
+2. ✅ Supabase Storage設定
+   - Supabase CLI (`brew install supabase/tap/supabase`)
+   - `activity-images` バケット作成
+   - RLSポリシー設定
+   - 使用ファイル: [supabase-storage-setup.sql](supabase-storage-setup.sql)
+3. ✅ Storage操作関数作成
+   - [lib/supabase-storage.ts](lib/supabase-storage.ts)
+   - `uploadActivityImage()`, `deleteActivityImage()`, `uploadMultipleImages()`
+4. ✅ 画像アップロードコンポーネント作成
+   - [components/ImageUpload.tsx](components/ImageUpload.tsx)
+   - ファイル選択、プレビュー、圧縮、バリデーション
+5. ✅ 投稿フォームに統合
+   - [activity-log-form.tsx](components/activity-log-form.tsx) 更新
+   - 画像は任意、最大3枚
+6. ✅ 画像表示機能
+   - [components/ActivityImages.tsx](components/ActivityImages.tsx)
+   - Next.js Image最適化、遅延読み込み、クリックで拡大モーダル
+   - [next.config.mjs](next.config.mjs) でSupabaseドメイン許可
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -475,4 +536,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-04
-**更新内容**: 活動ログ機能拡張（カテゴリ、いいね、コメント）、データベーススキーマ更新
+**更新内容**: 画像投稿機能追加（Supabase Storage、圧縮、プレビュー、拡大モーダル）

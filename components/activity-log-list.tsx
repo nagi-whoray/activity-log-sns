@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS } from '@/types/database'
 import { CommentSection } from '@/components/comment-section'
+import { ActivityImages } from '@/components/ActivityImages'
 
 interface ActivityLog {
   id: string
@@ -16,6 +17,7 @@ interface ActivityLog {
   activity_date: string
   created_at: string
   user_id: string
+  image_url: string | null
   profiles: {
     id: string
     username: string
@@ -182,6 +184,9 @@ export function ActivityLogList({ activityLogs, currentUserId }: ActivityLogList
             <CardContent className="space-y-3">
               <h3 className="font-semibold text-lg">{log.title}</h3>
               <p className="whitespace-pre-wrap text-gray-700">{log.content}</p>
+
+              {/* 画像表示 */}
+              <ActivityImages imageUrl={log.image_url} />
 
               {/* いいね・コメントボタン */}
               <div className="flex items-center gap-2 pt-2 border-t">
