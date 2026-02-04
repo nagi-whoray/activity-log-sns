@@ -1,0 +1,369 @@
+# Activity Log SNS - 開発メモ
+
+このドキュメントは、開発者とAIアシスタントのためのプロジェクト情報を記録しています。
+
+## プロジェクト概要
+
+Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユーザーは毎日の活動を記録し、タイムライン形式で共有できます。
+
+### 技術スタック
+- **フロントエンド**: Next.js 14 (App Router), React, TypeScript
+- **スタイリング**: Tailwind CSS + shadcn/ui
+- **バックエンド**: Supabase (Auth, Database, RLS)
+- **状態管理**: Server Components + Client Components
+
+## プロジェクト構成
+
+### ディレクトリ構造の意図
+
+```
+app/
+  ├── auth/callback/      # Supabase認証後のコールバック処理
+  ├── login/              # 未認証ユーザー向けログインページ
+  └── page.tsx            # メインページ（認証必須）
+
+components/
+  ├── ui/                 # shadcn/uiの再利用可能コンポーネント
+  ├── header.tsx          # [Client] ヘッダー（ログアウト機能）
+  ├── login-form.tsx      # [Client] ログイン/登録フォーム
+  ├── post-form.tsx       # [Client] 投稿作成フォーム
+  └── post-list.tsx       # [Server] 投稿一覧表示
+
+lib/
+  ├── supabase/
+  │   ├── client.ts       # クライアントコンポーネント用
+  │   └── server.ts       # サーバーコンポーネント/API用
+  └── utils.ts            # shadcn/ui用ユーティリティ
+
+types/
+  ├── database.ts         # Supabaseテーブルスキーマ型定義
+  └── index.ts            # アプリケーション用型定義
+```
+
+## セットアップ済みの機能
+
+### 認証フロー
+1. **middleware.ts**: 全ルートで認証状態をチェック
+   - 未認証 → `/login`にリダイレクト
+   - 認証済みで`/login`アクセス → `/`にリダイレクト
+
+2. **ログイン/登録**: [components/login-form.tsx](components/login-form.tsx)
+   - メールアドレス + パスワード認証
+   - サインアップ時は確認メール送信
+   - エラーハンドリング実装済み
+
+3. **セッション管理**: Supabase SSRを使用
+   - Cookieベースのセッション
+   - 自動リフレッシュ対応
+
+### データベース構造
+
+#### テーブル: profiles
+```sql
+id          UUID PRIMARY KEY (auth.users参照)
+email       TEXT NOT NULL
+username    TEXT NOT NULL
+avatar_url  TEXT
+created_at  TIMESTAMP
+updated_at  TIMESTAMP
+```
+
+#### テーブル: posts
+```sql
+id          UUID PRIMARY KEY
+user_id     UUID (profiles参照)
+content     TEXT NOT NULL
+created_at  TIMESTAMP
+updated_at  TIMESTAMP
+```
+
+#### RLS (Row Level Security)
+- **profiles**: 全員が閲覧可能、本人のみ更新可能
+- **posts**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+
+#### トリガー
+- `handle_new_user()`: 新規ユーザー登録時に自動でprofilesテーブルにレコード作成
+  - usernameはメールアドレスの@前を使用
+
+### UIコンポーネント
+
+#### shadcn/ui コンポーネント
+以下のコンポーネントが実装済み：
+- **Button** ([components/ui/button.tsx](components/ui/button.tsx))
+- **Card** ([components/ui/card.tsx](components/ui/card.tsx))
+- **Input** ([components/ui/input.tsx](components/ui/input.tsx))
+- **Label** ([components/ui/label.tsx](components/ui/label.tsx))
+
+新しいshadcn/uiコンポーネントを追加する場合：
+```bash
+npx shadcn@latest add [component-name]
+```
+
+## 重要な設計判断
+
+### 1. Server Components vs Client Components
+- **ページレベル**: Server Components（データフェッチ）
+- **インタラクティブ**: Client Components（フォーム、ボタン）
+- [app/page.tsx](app/page.tsx)でデータ取得 → Propsで子コンポーネントに渡す
+
+### 2. Supabaseクライアントの使い分け
+- **Server Components/API**: `lib/supabase/server.ts`
+  - Cookie処理が必要
+  - `await cookies()`を使用（Next.js 15対応）
+- **Client Components**: `lib/supabase/client.ts`
+  - ブラウザで実行
+  - リアルタイム更新に使用
+
+### 3. 認証フロー
+- ミドルウェアで全体的な認証チェック
+- 各ページで個別の権限チェックは不要（ミドルウェアで保証）
+
+## 開発時の注意点
+
+### 環境変数
+以下の環境変数が必須：
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+**注意**: `NEXT_PUBLIC_`プレフィックスはクライアント側でも使用可能にする
+
+### Supabaseの初期設定が必要
+アプリを動作させる前に以下を実施：
+1. Supabaseプロジェクト作成
+2. SQL実行（[README.md](README.md)参照）
+3. 環境変数設定
+
+### 型安全性
+- [types/database.ts](types/database.ts)がSupabaseスキーマと一致している必要がある
+- スキーマ変更時は型定義も更新
+- Supabase CLIで自動生成も可能：
+  ```bash
+  npx supabase gen types typescript --project-id [project-id] > types/database.ts
+  ```
+
+## よくある問題とトラブルシューティング
+
+### 1. "Invalid API key"エラー
+- `.env.local`の環境変数を確認
+- 開発サーバーを再起動（環境変数変更後は必須）
+
+### 2. 投稿一覧が表示されない
+- Supabaseのテーブルが作成されているか確認
+- RLSポリシーが正しく設定されているか確認
+- ブラウザのConsoleでエラーチェック
+
+### 3. ログイン後にリダイレクトされない
+- [middleware.ts](middleware.ts)の`matcher`設定を確認
+- Cookieが正しく設定されているか確認
+
+### 4. 型エラー: "Type instantiation is excessively deep"
+- TypeScriptのバージョンを確認（5.0以上推奨）
+- `tsconfig.json`で`skipLibCheck: true`を設定
+
+## 次の開発ステップ
+
+### 優先度: 高
+1. **プロフィール編集機能**
+   - `/profile/edit`ページ作成
+   - アバター画像アップロード（Supabase Storage）
+
+2. **投稿の編集・削除機能**
+   - 投稿カードにメニューボタン追加
+   - 本人のみ表示
+
+3. **エラーハンドリングの改善**
+   - トースト通知の実装（sonner推奨）
+   - エラーバウンダリーの追加
+
+### 優先度: 中
+4. **いいね機能**
+   - `likes`テーブル追加
+   - 楽観的UI更新
+
+5. **コメント機能**
+   - `comments`テーブル追加
+   - ネストコメント対応
+
+6. **無限スクロール**
+   - React Intersection Observer使用
+   - ページネーション実装
+
+### 優先度: 低
+7. **リアルタイム更新**
+   - Supabase Realtime使用
+   - 新規投稿の自動表示
+
+8. **フォロー機能**
+   - `follows`テーブル追加
+   - タイムラインのフィルタリング
+
+9. **検索機能**
+   - 投稿の全文検索
+   - ユーザー検索
+
+## データベーススキーマ拡張案
+
+### likes テーブル
+```sql
+CREATE TABLE likes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+```
+
+### comments テーブル
+```sql
+CREATE TABLE comments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  content TEXT NOT NULL,
+  parent_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### follows テーブル
+```sql
+CREATE TABLE follows (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  follower_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  following_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(follower_id, following_id),
+  CHECK (follower_id != following_id)
+);
+```
+
+## パフォーマンス最適化のヒント
+
+1. **画像最適化**: Next.jsの`<Image>`コンポーネント使用
+2. **ルートキャッシング**: Server Componentsは自動でキャッシュされる
+3. **データベースインデックス**: よく検索するカラムにインデックス追加
+4. **Supabaseクエリ最適化**: 必要なカラムのみselect
+
+## セキュリティチェックリスト
+
+- [x] RLS有効化
+- [x] 環境変数は`.env.local`（Gitにコミットしない）
+- [x] XSS対策（Reactのデフォルト保護）
+- [x] CSRF対策（Supabaseの組み込み保護）
+- [ ] レート制限（将来実装予定）
+- [ ] 入力バリデーション強化（将来実装予定）
+
+## プロジェクト設定情報
+
+### Supabase設定
+- **プロジェクトURL**: `https://eryskzojvhzffszreycd.supabase.co`
+- **リージョン**: Northeast Asia (Tokyo)
+- **セットアップ完了日**: 2026-02-03
+
+### 環境変数
+環境変数は [.env.local](.env.local) に設定済み：
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://eryskzojvhzffszreycd.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
+```
+
+**重要**: `.env.local`はGitにコミットされません（`.gitignore`で除外済み）
+
+## セットアップ履歴
+
+### 初期セットアップ (2026-02-03)
+1. ✅ Supabaseプロジェクト作成
+2. ✅ 環境変数設定（`.env.local`）
+3. ✅ データベーステーブル作成
+   - 使用ファイル: [supabase-setup.sql](supabase-setup.sql)
+   - 作成テーブル: `profiles`, `posts`
+   - RLSポリシー設定完了
+   - トリガー設定完了（新規ユーザー自動プロフィール作成）
+   - インデックス作成完了（パフォーマンス最適化）
+4. ✅ 型定義ファイル確認（[types/database.ts](types/database.ts)、[types/index.ts](types/index.ts)）
+5. ✅ 開発サーバー起動確認
+
+### データベーススキーマ確認方法
+Supabaseで実際のテーブル構造を確認：
+1. Supabaseダッシュボード → Table Editor
+2. または SQL Editor で `\d profiles` `\d posts` を実行
+
+## 開発コマンド
+
+### よく使うコマンド
+```bash
+# 開発サーバー起動
+npm run dev
+
+# ビルド
+npm run build
+
+# 本番環境で起動
+npm start
+
+# リント
+npm run lint
+
+# 型チェック
+npx tsc --noEmit
+```
+
+### Supabase型定義の更新
+データベーススキーマを変更した場合は型定義を再生成：
+```bash
+npx supabase gen types typescript --project-id eryskzojvhzffszreycd > types/database.ts
+```
+
+**注意**: Supabase CLIのインストールが必要な場合：
+```bash
+npm install -g supabase
+supabase login
+```
+
+### 新しいshadcn/uiコンポーネントの追加
+```bash
+npx shadcn@latest add [component-name]
+
+# 例
+npx shadcn@latest add dialog
+npx shadcn@latest add toast
+npx shadcn@latest add dropdown-menu
+```
+
+## トラブルシューティング（追加）
+
+### 5. Supabase接続エラー
+- プロジェクトURLとAnon Keyが正しいか確認
+- Supabaseプロジェクトが起動中か確認（ダッシュボードで確認）
+- ネットワーク接続を確認
+
+### 6. テーブルが見つからないエラー
+- [supabase-setup.sql](supabase-setup.sql) が正しく実行されたか確認
+- Supabase Table Editorでテーブルの存在を確認
+- 必要に応じてSQLを再実行
+
+### 7. 環境変数が読み込まれない
+- `.env.local` ファイル名が正確か確認（スペースなど）
+- 開発サーバーを再起動（変更後は必須）
+- `NEXT_PUBLIC_`プレフィックスがあるか確認
+
+## 参考リンク
+
+- [Next.js App Router Documentation](https://nextjs.org/docs/app)
+- [Supabase Auth Docs](https://supabase.com/docs/guides/auth)
+- [Supabase JavaScript Client](https://supabase.com/docs/reference/javascript/introduction)
+- [shadcn/ui Components](https://ui.shadcn.com/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+
+### プロジェクト固有のリソース
+- [Supabaseダッシュボード](https://supabase.com/dashboard/project/eryskzojvhzffszreycd)
+- [Supabase Table Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/editor)
+- [Supabase SQL Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/sql)
+
+---
+
+最終更新: 2026-02-03
