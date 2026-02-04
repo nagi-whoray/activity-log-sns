@@ -431,6 +431,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - [components/ActivityImages.tsx](components/ActivityImages.tsx)
    - Next.js Image最適化、遅延読み込み、クリックで拡大モーダル
    - [next.config.mjs](next.config.mjs) でSupabaseドメイン許可
+7. ✅ GitHubプッシュ完了
+   - コミットID: `9e53a33`
+   - 21ファイル変更（1,418行追加）
 
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
