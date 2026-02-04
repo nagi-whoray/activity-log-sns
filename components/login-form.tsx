@@ -42,8 +42,9 @@ export function LoginForm() {
         router.push('/')
         router.refresh()
       }
-    } catch (error: any) {
-      setError(error.message || 'エラーが発生しました')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'エラーが発生しました'
+      setError(message)
     } finally {
       setLoading(false)
     }

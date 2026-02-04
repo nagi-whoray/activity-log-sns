@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { PostList } from '@/components/post-list'
-import { PostForm } from '@/components/post-form'
+import { ActivityLogList } from '@/components/activity-log-list'
+import { ActivityLogForm } from '@/components/activity-log-form'
 import { Header } from '@/components/header'
 
 export default async function Home() {
@@ -10,15 +10,32 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 投稿一覧を取得（プロフィール情報も含める）
-  const { data: posts } = await supabase
-    .from('posts')
+  // 活動ログ一覧を取得（プロフィール、いいね、コメント情報も含める）
+  const { data: activityLogs } = await supabase
+    .from('activity_logs')
     .select(`
       *,
       profiles (
         id,
         username,
+        display_name,
         avatar_url
+      ),
+      likes (
+        id,
+        user_id
+      ),
+      comments (
+        id,
+        content,
+        created_at,
+        user_id,
+        profiles (
+          id,
+          username,
+          display_name,
+          avatar_url
+        )
       )
     `)
     .order('created_at', { ascending: false })
@@ -30,8 +47,11 @@ export default async function Home() {
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
         <div className="space-y-6">
-          <PostForm />
-          <PostList posts={posts || []} />
+          <ActivityLogForm />
+          <ActivityLogList
+            activityLogs={activityLogs || []}
+            currentUserId={user?.id || null}
+          />
         </div>
       </main>
     </div>
