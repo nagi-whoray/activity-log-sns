@@ -23,11 +23,12 @@ app/
   └── page.tsx            # メインページ（認証必須）
 
 components/
-  ├── ui/                 # shadcn/uiの再利用可能コンポーネント
-  ├── header.tsx          # [Client] ヘッダー（ログアウト機能）
-  ├── login-form.tsx      # [Client] ログイン/登録フォーム
-  ├── post-form.tsx       # [Client] 投稿作成フォーム
-  └── post-list.tsx       # [Server] 投稿一覧表示
+  ├── ui/                      # shadcn/uiの再利用可能コンポーネント
+  ├── header.tsx               # [Client] ヘッダー（ログアウト機能）
+  ├── login-form.tsx           # [Client] ログイン/登録フォーム
+  ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム
+  ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示
+  └── comment-section.tsx      # [Client] コメント機能
 
 lib/
   ├── supabase/
@@ -58,32 +59,72 @@ types/
 
 ### データベース構造
 
-#### テーブル: profiles
+スキーマ定義: [supabase-schema.sql](supabase-schema.sql)
+
+#### テーブル: profiles（ユーザー情報）
 ```sql
-id          UUID PRIMARY KEY (auth.users参照)
-email       TEXT NOT NULL
-username    TEXT NOT NULL
-avatar_url  TEXT
-created_at  TIMESTAMP
-updated_at  TIMESTAMP
+id            UUID PRIMARY KEY (auth.users参照)
+email         TEXT NOT NULL
+username      TEXT NOT NULL
+display_name  TEXT
+avatar_url    TEXT
+bio           TEXT
+created_at    TIMESTAMP
+updated_at    TIMESTAMP
 ```
 
-#### テーブル: posts
+#### テーブル: activity_logs（活動ログ）
 ```sql
-id          UUID PRIMARY KEY
-user_id     UUID (profiles参照)
-content     TEXT NOT NULL
-created_at  TIMESTAMP
-updated_at  TIMESTAMP
+id            UUID PRIMARY KEY
+user_id       UUID (profiles参照)
+category      activity_category NOT NULL  -- 'workout' | 'study' | 'beauty'
+title         TEXT NOT NULL
+content       TEXT NOT NULL
+activity_date DATE DEFAULT CURRENT_DATE
+image_url     TEXT
+created_at    TIMESTAMP
+updated_at    TIMESTAMP
 ```
+
+#### テーブル: likes（いいね）
+```sql
+id              UUID PRIMARY KEY
+activity_log_id UUID (activity_logs参照)
+user_id         UUID (profiles参照)
+created_at      TIMESTAMP
+UNIQUE(activity_log_id, user_id)  -- 同じ投稿に複数回いいね不可
+```
+
+#### テーブル: comments（コメント）
+```sql
+id              UUID PRIMARY KEY
+activity_log_id UUID (activity_logs参照)
+user_id         UUID (profiles参照)
+content         TEXT NOT NULL
+parent_id       UUID (comments参照、ネスト用)
+created_at      TIMESTAMP
+updated_at      TIMESTAMP
+```
+
+#### カテゴリ（ENUM型）
+| 値 | 日本語 | アイコン |
+|---|--------|---------|
+| `workout` | 筋トレ | 💪 |
+| `study` | 勉強 | 📚 |
+| `beauty` | 美容 | ✨ |
 
 #### RLS (Row Level Security)
 - **profiles**: 全員が閲覧可能、本人のみ更新可能
-- **posts**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+- **activity_logs**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+- **likes**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ削除可能
+- **comments**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ更新/削除可能
 
 #### トリガー
 - `handle_new_user()`: 新規ユーザー登録時に自動でprofilesテーブルにレコード作成
-  - usernameはメールアドレスの@前を使用
+- `handle_updated_at()`: 各テーブルのupdated_atを自動更新
+
+#### プロフィール自動作成
+投稿時にプロフィールが存在しない場合、[activity-log-form.tsx](components/activity-log-form.tsx) で自動作成される
 
 ### UIコンポーネント
 
@@ -178,13 +219,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
    - エラーバウンダリーの追加
 
 ### 優先度: 中
-4. **いいね機能**
+4. ~~**いいね機能**~~ ✅ 実装済み
    - `likes`テーブル追加
    - 楽観的UI更新
 
-5. **コメント機能**
+5. ~~**コメント機能**~~ ✅ 実装済み
    - `comments`テーブル追加
-   - ネストコメント対応
+   - コメント投稿・削除機能
 
 6. **無限スクロール**
    - React Intersection Observer使用
@@ -205,31 +246,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 ## データベーススキーマ拡張案
 
-### likes テーブル
-```sql
-CREATE TABLE likes (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(post_id, user_id)
-);
-```
-
-### comments テーブル
-```sql
-CREATE TABLE comments (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  post_id UUID REFERENCES posts(id) ON DELETE CASCADE NOT NULL,
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  content TEXT NOT NULL,
-  parent_id UUID REFERENCES comments(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-### follows テーブル
+### follows テーブル（未実装）
 ```sql
 CREATE TABLE follows (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -259,6 +276,12 @@ CREATE TABLE follows (
 
 ## プロジェクト設定情報
 
+### GitHubリポジトリ
+- **リポジトリURL**: https://github.com/nagi-whoray/activity-log-sns
+- **オーナー**: nagi-whoray
+- **初回コミット**: 2026-02-04
+- **デフォルトブランチ**: main
+
 ### Supabase設定
 - **プロジェクトURL**: `https://eryskzojvhzffszreycd.supabase.co`
 - **リージョン**: Northeast Asia (Tokyo)
@@ -273,6 +296,33 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
 
 **重要**: `.env.local`はGitにコミットされません（`.gitignore`で除外済み）
 
+## デプロイメント
+
+### Vercelへのデプロイ（推奨）
+1. [Vercel](https://vercel.com)でアカウント作成
+2. GitHubリポジトリと連携
+3. 環境変数を設定：
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. デプロイボタンをクリック
+
+**注意事項**:
+- Vercelは自動的にmainブランチへのpush時に再デプロイされる
+- プレビューデプロイは各プルリクエストに自動生成される
+- 環境変数はVercelダッシュボードで管理
+
+### デプロイ前チェックリスト
+- [ ] 本番環境用の環境変数を設定
+- [ ] ビルドが成功することを確認（`npm run build`）
+- [ ] Supabase RLSが有効化されているか確認
+- [ ] `.env.local`が`.gitignore`に含まれているか確認
+- [ ] エラーバウンダリーの実装（推奨）
+
+### その他のデプロイオプション
+- **Netlify**: 同様にGitHub連携可能
+- **AWS Amplify**: AWSエコスystem使用時
+- **自己ホスティング**: `npm run build && npm start`
+
 ## セットアップ履歴
 
 ### 初期セットアップ (2026-02-03)
@@ -286,6 +336,40 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - インデックス作成完了（パフォーマンス最適化）
 4. ✅ 型定義ファイル確認（[types/database.ts](types/database.ts)、[types/index.ts](types/index.ts)）
 5. ✅ 開発サーバー起動確認
+
+### GitHubリポジトリ作成 (2026-02-04)
+1. ✅ GitHub CLI (gh) インストール
+2. ✅ GitHub認証完了（nagi-whorayアカウント）
+3. ✅ GitHubリポジトリ作成（public）
+4. ✅ 初回コミット・プッシュ完了
+   - コミットID: `29366ec`
+   - 26ファイル変更（1,751行追加、143行削除）
+   - 主な内容：
+     - Supabase認証システム実装
+     - 投稿機能実装（作成・一覧表示）
+     - shadcn/ui UIコンポーネント
+     - 認証ミドルウェア
+     - データベーススキーマ
+
+### 活動ログ機能拡張 (2026-02-04)
+1. ✅ データベーススキーマ再設計
+   - 使用ファイル: [supabase-schema.sql](supabase-schema.sql)
+   - `posts` → `activity_logs` に変更
+   - カテゴリ（筋トレ/勉強/美容）、タイトル、活動日を追加
+   - `likes` テーブル追加
+   - `comments` テーブル追加
+2. ✅ 投稿フォーム刷新
+   - [activity-log-form.tsx](components/activity-log-form.tsx)
+   - カテゴリ選択UI、タイトル入力、日付選択
+   - プロフィール自動作成機能
+3. ✅ いいね機能実装
+   - [activity-log-list.tsx](components/activity-log-list.tsx) 内 `LikeButton`
+   - 楽観的UI更新
+4. ✅ コメント機能実装
+   - [comment-section.tsx](components/comment-section.tsx)
+   - コメント投稿・削除
+5. ✅ GitHubプッシュ完了
+   - コミットID: `216badd`
 
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
@@ -334,6 +418,30 @@ npx shadcn@latest add toast
 npx shadcn@latest add dropdown-menu
 ```
 
+### Git ワークフロー
+```bash
+# 変更状況を確認
+git status
+
+# 変更をステージング
+git add .
+
+# コミット
+git commit -m "機能追加: 説明"
+
+# GitHubにプッシュ
+git push origin main
+
+# ブランチ作成（新機能開発時）
+git checkout -b feature/機能名
+
+# ブランチをプッシュ
+git push -u origin feature/機能名
+
+# プルリクエスト作成（gh CLI使用）
+gh pr create --title "機能追加" --body "説明"
+```
+
 ## トラブルシューティング（追加）
 
 ### 5. Supabase接続エラー
@@ -366,4 +474,5 @@ npx shadcn@latest add dropdown-menu
 
 ---
 
-最終更新: 2026-02-03
+**最終更新**: 2026-02-04
+**更新内容**: 活動ログ機能拡張（カテゴリ、いいね、コメント）、データベーススキーマ更新
