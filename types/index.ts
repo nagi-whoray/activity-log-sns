@@ -4,6 +4,7 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ActivityLog = Database['public']['Tables']['activity_logs']['Row']
 export type Like = Database['public']['Tables']['likes']['Row']
 export type Comment = Database['public']['Tables']['comments']['Row']
+export type Follow = Database['public']['Tables']['follows']['Row']
 
 export type ActivityLogWithProfile = ActivityLog & {
   profiles: Profile

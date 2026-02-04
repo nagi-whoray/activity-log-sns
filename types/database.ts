@@ -135,6 +135,26 @@ export interface Database {
           updated_at?: string
         }
       }
+      follows: {
+        Row: {
+          id: string
+          follower_id: string
+          following_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          follower_id: string
+          following_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          follower_id?: string
+          following_id?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       activity_logs_with_counts: {
@@ -177,6 +197,9 @@ export type LikeInsert = Database['public']['Tables']['likes']['Insert']
 export type Comment = Database['public']['Tables']['comments']['Row']
 export type CommentInsert = Database['public']['Tables']['comments']['Insert']
 export type CommentUpdate = Database['public']['Tables']['comments']['Update']
+
+export type Follow = Database['public']['Tables']['follows']['Row']
+export type FollowInsert = Database['public']['Tables']['follows']['Insert']
 
 export type ActivityLogWithCounts = Database['public']['Views']['activity_logs_with_counts']['Row']
 

@@ -20,15 +20,19 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 app/
   ├── auth/callback/      # Supabase認証後のコールバック処理
   ├── login/              # 未認証ユーザー向けログインページ
-  └── page.tsx            # メインページ（認証必須）
+  ├── users/[id]/         # ユーザーマイページ（プロフィール＋投稿一覧）
+  └── page.tsx            # メインページ（タイムライン、タブ切り替え対応）
 
 components/
   ├── ui/                      # shadcn/uiの再利用可能コンポーネント
-  ├── header.tsx               # [Client] ヘッダー（ログアウト機能）
+  ├── header.tsx               # [Client] ヘッダー（タイムライン・マイページ・ログアウト）
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
   ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム（画像アップロード対応）
-  ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（画像表示対応）
+  ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
   ├── comment-section.tsx      # [Client] コメント機能
+  ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
+  ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全投稿/フォロー中）
+  ├── user-profile-header.tsx  # [Server] ユーザープロフィールヘッダー
   ├── ImageUpload.tsx          # [Client] 画像アップロードコンポーネント
   └── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
 
@@ -110,6 +114,16 @@ created_at      TIMESTAMP
 updated_at      TIMESTAMP
 ```
 
+#### テーブル: follows（フォロー関係）
+```sql
+id            UUID PRIMARY KEY
+follower_id   UUID (profiles参照) NOT NULL
+following_id  UUID (profiles参照) NOT NULL
+created_at    TIMESTAMP
+UNIQUE(follower_id, following_id)  -- 同じユーザーを複数回フォロー不可
+CHECK(follower_id != following_id) -- 自分自身をフォロー不可
+```
+
 #### カテゴリ（ENUM型）
 | 値 | 日本語 | アイコン |
 |---|--------|---------|
@@ -122,6 +136,7 @@ updated_at      TIMESTAMP
 - **activity_logs**: 全員が閲覧可能、本人のみ作成/更新/削除可能
 - **likes**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ削除可能
 - **comments**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ更新/削除可能
+- **follows**: 全員が閲覧可能、本人のみフォロー作成/削除可能
 
 #### トリガー
 - `handle_new_user()`: 新規ユーザー登録時に自動でprofilesテーブルにレコード作成
@@ -274,9 +289,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
    - Supabase Realtime使用
    - 新規投稿の自動表示
 
-8. **フォロー機能**
+8. ~~**フォロー機能**~~ ✅ 実装済み
    - `follows`テーブル追加
-   - タイムラインのフィルタリング
+   - フォロー/フォロー解除ボタン
+   - タイムラインタブ切り替え（全投稿/フォロー中）
+   - ユーザーマイページ（`/users/[id]`）
+   - フォロワー数・フォロー中数の表示
 
 9. **検索機能**
    - 投稿の全文検索
@@ -284,17 +302,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 ## データベーススキーマ拡張案
 
-### follows テーブル（未実装）
-```sql
-CREATE TABLE follows (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  follower_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  following_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(follower_id, following_id),
-  CHECK (follower_id != following_id)
-);
-```
+### follows テーブル ✅ 実装済み
+- セットアップファイル: [supabase-follows-setup.sql](supabase-follows-setup.sql)
+- マイグレーション: `supabase/migrations/20260204225531_add_follows_table.sql`
 
 ## パフォーマンス最適化のヒント
 
@@ -435,6 +445,29 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - コミットID: `9e53a33`
    - 21ファイル変更（1,418行追加）
 
+### フォロー機能・マイページ・タイムライン追加 (2026-02-05)
+1. ✅ データベース拡張
+   - `follows` テーブル追加（RLSポリシー・インデックス含む）
+   - 使用ファイル: [supabase-follows-setup.sql](supabase-follows-setup.sql)
+   - マイグレーション: `supabase db push` で適用済み
+2. ✅ ユーザーマイページ作成
+   - [app/users/[id]/page.tsx](app/users/[id]/page.tsx)
+   - [components/user-profile-header.tsx](components/user-profile-header.tsx)
+   - プロフィール情報、投稿一覧、フォロワー数・フォロー中数表示
+3. ✅ フォロー機能実装
+   - [components/follow-button.tsx](components/follow-button.tsx) - フォロー/フォロー解除ボタン
+   - 投稿カード・マイページ両方にフォローボタン配置
+   - 楽観的UI更新（LikeButtonと同パターン）
+4. ✅ タイムラインタブ切り替え
+   - [components/timeline-tabs.tsx](components/timeline-tabs.tsx) - 「全ての投稿」/「フォロー中」タブ
+   - [app/page.tsx](app/page.tsx) - `?tab=following` パラメータによるフィルタリング
+5. ✅ ナビゲーション改善
+   - ヘッダーに「タイムライン」「マイページ」ボタン追加
+   - 投稿カードのユーザー名・アバターをクリックでマイページへ遷移
+6. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `follows` テーブル型追加
+   - [types/index.ts](types/index.ts) - `Follow` 型エクスポート追加
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -538,5 +571,5 @@ gh pr create --title "機能追加" --body "説明"
 
 ---
 
-**最終更新**: 2026-02-04
-**更新内容**: 画像投稿機能追加（Supabase Storage、圧縮、プレビュー、拡大モーダル）
+**最終更新**: 2026-02-05
+**更新内容**: フォロー機能・ユーザーマイページ・タイムラインタブ切り替え追加

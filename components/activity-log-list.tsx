@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS } from '@/types/database'
 import { CommentSection } from '@/components/comment-section'
 import { ActivityImages } from '@/components/ActivityImages'
+import { FollowButton } from '@/components/follow-button'
 
 interface ActivityLog {
   id: string
@@ -42,6 +44,8 @@ interface ActivityLog {
 interface ActivityLogListProps {
   activityLogs: ActivityLog[]
   currentUserId: string | null
+  followingIds?: string[]
+  activeTab?: 'all' | 'following'
 }
 
 const CATEGORY_STYLES: Record<ActivityCategory, { bg: string; text: string; icon: string }> = {
@@ -123,7 +127,7 @@ function LikeButton({
   )
 }
 
-export function ActivityLogList({ activityLogs, currentUserId }: ActivityLogListProps) {
+export function ActivityLogList({ activityLogs, currentUserId, followingIds = [], activeTab }: ActivityLogListProps) {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
 
   const toggleComments = (logId: string) => {
@@ -141,10 +145,21 @@ export function ActivityLogList({ activityLogs, currentUserId }: ActivityLogList
   if (activityLogs.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">まだ活動ログがありません</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          最初の活動を記録してみましょう！
-        </p>
+        {activeTab === 'following' ? (
+          <>
+            <p className="text-muted-foreground">フォロー中のユーザーの投稿がありません</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              「全ての投稿」タブからユーザーをフォローしてみましょう！
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-muted-foreground">まだ活動ログがありません</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              最初の活動を記録してみましょう！
+            </p>
+          </>
+        )}
       </div>
     )
   }
@@ -160,11 +175,18 @@ export function ActivityLogList({ activityLogs, currentUserId }: ActivityLogList
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                  <Link href={`/users/${log.user_id}`} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold hover:opacity-80 transition-opacity">
                     {displayName[0]?.toUpperCase() || 'U'}
-                  </div>
+                  </Link>
                   <div>
-                    <p className="font-semibold">{displayName}</p>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/users/${log.user_id}`} className="font-semibold hover:underline">{displayName}</Link>
+                      <FollowButton
+                        targetUserId={log.user_id}
+                        currentUserId={currentUserId}
+                        isFollowing={followingIds.includes(log.user_id)}
+                      />
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {new Date(log.activity_date).toLocaleDateString('ja-JP', {
                         year: 'numeric',

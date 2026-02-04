@@ -2,6 +2,7 @@
 
 import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
@@ -24,15 +25,29 @@ export function Header({ user }: HeaderProps) {
       <div className="container mx-auto max-w-2xl px-4 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">Activity Log SNS</h1>
+            <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
+              Activity Log SNS
+            </Link>
             {user && (
               <p className="text-sm text-muted-foreground">{user.email}</p>
             )}
           </div>
           {user && (
-            <Button variant="outline" onClick={handleSignOut}>
-              ログアウト
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/">
+                <Button variant="ghost" size="sm">
+                  タイムライン
+                </Button>
+              </Link>
+              <Link href={`/users/${user.id}`}>
+                <Button variant="ghost" size="sm">
+                  マイページ
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={handleSignOut}>
+                ログアウト
+              </Button>
+            </div>
           )}
         </div>
       </div>
