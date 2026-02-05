@@ -372,29 +372,41 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
 
 ## デプロイメント
 
-### Vercelへのデプロイ（推奨）
-1. [Vercel](https://vercel.com)でアカウント作成
-2. GitHubリポジトリと連携
-3. 環境変数を設定：
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. デプロイボタンをクリック
+### Vercelデプロイ ✅ 完了
+- **本番URL**: https://activity-log-sns.vercel.app （公開アクセス可能）
+- **デプロイ日**: 2026-02-06
+- **自動デプロイ**: GitHub mainブランチへのpush時に自動デプロイ
 
-**注意事項**:
-- Vercelは自動的にmainブランチへのpush時に再デプロイされる
-- プレビューデプロイは各プルリクエストに自動生成される
-- 環境変数はVercelダッシュボードで管理
+#### 手動デプロイコマンド
+```bash
+# プレビューデプロイ
+vercel
 
-### デプロイ前チェックリスト
-- [ ] 本番環境用の環境変数を設定
-- [ ] ビルドが成功することを確認（`npm run build`）
-- [ ] Supabase RLSが有効化されているか確認
-- [ ] `.env.local`が`.gitignore`に含まれているか確認
+# 本番デプロイ
+vercel --prod
+```
+
+#### 環境変数（Vercel側で設定済み）
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+#### Supabase認証URL設定
+Supabaseダッシュボード > Authentication > URL Configuration で設定:
+- **Site URL**: `https://activity-log-sns.vercel.app`
+- **Redirect URLs**:
+  - `https://activity-log-sns.vercel.app/auth/callback` （本番用）
+  - `http://localhost:3000/auth/callback` （ローカル開発用）
+
+### デプロイチェックリスト
+- [x] 本番環境用の環境変数を設定
+- [x] ビルドが成功することを確認（`npm run build`）
+- [x] Supabase RLSが有効化されているか確認
+- [x] `.env.local`が`.gitignore`に含まれているか確認
 - [ ] エラーバウンダリーの実装（推奨）
 
 ### その他のデプロイオプション
 - **Netlify**: 同様にGitHub連携可能
-- **AWS Amplify**: AWSエコスystem使用時
+- **AWS Amplify**: AWSエコシステム使用時
 - **自己ホスティング**: `npm run build && npm start`
 
 ## セットアップ履歴
@@ -546,6 +558,26 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - [components/activity-log-list.tsx](components/activity-log-list.tsx)
    - `avatar_url`がある場合は実画像を表示
 
+### Vercelデプロイ (2026-02-06)
+1. ✅ Vercel CLIインストール
+   - `npm i -g vercel`
+2. ✅ Vercelアカウント作成・ログイン
+   - `vercel login` でGitHub認証
+3. ✅ プロジェクト初期デプロイ
+   - `vercel` コマンドでプロジェクトリンク・初回デプロイ
+4. ✅ 環境変数設定
+   - `vercel env add NEXT_PUBLIC_SUPABASE_URL`
+   - `vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. ✅ 本番デプロイ
+   - `vercel --prod` で本番環境にデプロイ
+   - 本番URL: https://activity-log-sns.vercel.app
+6. ✅ GitHub自動デプロイ連携
+   - Vercelダッシュボード > Settings > Git でGitHub連携設定
+   - mainブランチへのpushで自動デプロイ
+7. ✅ Supabase認証URL設定
+   - Site URL: `https://activity-log-sns.vercel.app`
+   - Redirect URLs: 本番用・ローカル開発用の両方を登録
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -643,6 +675,8 @@ gh pr create --title "機能追加" --body "説明"
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 
 ### プロジェクト固有のリソース
+- [Vercelダッシュボード](https://vercel.com/nagi-whorays-projects/activity-log-sns)
+- [本番サイト](https://activity-log-sns.vercel.app)
 - [Supabaseダッシュボード](https://supabase.com/dashboard/project/eryskzojvhzffszreycd)
 - [Supabase Table Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/editor)
 - [Supabase SQL Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/sql)
@@ -650,4 +684,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: 投稿フォーム改善（タイトル削除、活動日を今日/昨日の選択リストに変更）
+**更新内容**: Vercelデプロイ完了（自動デプロイ設定、Supabase認証URL設定）
