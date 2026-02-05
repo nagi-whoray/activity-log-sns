@@ -9,7 +9,8 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 ### 技術スタック
 - **フロントエンド**: Next.js 14 (App Router), React, TypeScript
 - **スタイリング**: Tailwind CSS + shadcn/ui
-- **バックエンド**: Supabase (Auth, Database, RLS)
+- **画像処理**: react-easy-crop（クロップ）、browser-image-compression（圧縮）
+- **バックエンド**: Supabase (Auth, Database, RLS, Storage)
 - **状態管理**: Server Components + Client Components
 
 ## プロジェクト構成
@@ -20,6 +21,7 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 app/
   ├── auth/callback/      # Supabase認証後のコールバック処理
   ├── login/              # 未認証ユーザー向けログインページ
+  ├── profile/edit/       # プロフィール編集ページ
   ├── users/[id]/         # ユーザーマイページ（プロフィール＋投稿一覧）
   └── page.tsx            # メインページ（タイムライン、タブ切り替え対応）
 
@@ -33,6 +35,8 @@ components/
   ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
   ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全投稿/フォロー中）
   ├── user-profile-header.tsx  # [Server] ユーザープロフィールヘッダー
+  ├── profile-edit-form.tsx    # [Client] プロフィール編集フォーム（画像アップロード・クロップ対応）
+  ├── image-crop-dialog.tsx    # [Client] 画像クロップダイアログ（react-easy-crop使用）
   ├── ImageUpload.tsx          # [Client] 画像アップロードコンポーネント
   └── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
 
@@ -41,6 +45,7 @@ lib/
   │   ├── client.ts       # クライアントコンポーネント用
   │   └── server.ts       # サーバーコンポーネント/API用
   ├── supabase-storage.ts # Supabase Storage操作関数
+  ├── crop-image.ts       # Canvas APIで画像を切り抜くユーティリティ
   └── utils.ts            # shadcn/ui用ユーティリティ
 
 types/
@@ -77,6 +82,7 @@ username      TEXT NOT NULL
 display_name  TEXT
 avatar_url    TEXT
 bio           TEXT
+background_url TEXT
 created_at    TIMESTAMP
 updated_at    TIMESTAMP
 ```
@@ -155,10 +161,12 @@ CHECK(follower_id != following_id) -- 自分自身をフォロー不可
 #### Storageポリシー
 | 操作 | 許可対象 | 条件 |
 |------|----------|------|
-| INSERT | 認証ユーザー | 自分のフォルダ（user_id）にのみ |
+| INSERT | 認証ユーザー | 自分のフォルダ（`{user_id}/*` または `profiles/{user_id}/*`） |
 | SELECT | 全員 | - |
 | DELETE | 認証ユーザー | 自分のフォルダのファイルのみ |
 | UPDATE | 認証ユーザー | 自分のフォルダのファイルのみ |
+
+**注意**: プロフィール画像は `profiles/{userId}/{type}-{timestamp}-{random}.{ext}` パスに保存される。活動ログ画像は `{userId}/{filename}` パスに保存される。
 
 #### 画像投稿機能
 
@@ -170,10 +178,25 @@ CHECK(follower_id != following_id) -- 自分自身をフォロー不可
 
 **機能:**
 - 画像形式: JPEG, PNG, GIF, WebP
-- 最大ファイルサイズ: 5MB
+- 最大ファイルサイズ: 5MB（活動ログ画像）/ 制限なし（プロフィール画像、圧縮で対応）
 - 最大枚数: 3枚/投稿
 - クライアント側圧縮: browser-image-compression使用（1MB以下、1920px以下）
 - 画像URLはJSON配列として `activity_logs.image_url` に保存
+
+#### プロフィール画像機能
+
+**関連ファイル:**
+- [lib/supabase-storage.ts](lib/supabase-storage.ts) - `uploadProfileImage()` 関数
+- [components/profile-edit-form.tsx](components/profile-edit-form.tsx) - プロフィール編集フォーム
+- [components/image-crop-dialog.tsx](components/image-crop-dialog.tsx) - クロップダイアログ
+- [lib/crop-image.ts](lib/crop-image.ts) - Canvas APIで画像切り抜きユーティリティ
+
+**機能:**
+- アイコン画像（avatar_url）: 1:1アスペクト比でクロップ、円形表示
+- 背景画像（background_url）: 40:9アスペクト比でクロップ（表示領域に合致）
+- react-easy-cropによるドラッグ＆ズームでのクロップ
+- 切り抜き後にbrowser-image-compressionで圧縮（1MB以下）
+- 画像変更時は旧画像を自動削除
 
 **Next.js画像最適化:**
 - [next.config.mjs](next.config.mjs) でSupabase Storageドメインを許可設定済み
@@ -259,9 +282,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ## 次の開発ステップ
 
 ### 優先度: 高
-1. **プロフィール編集機能**
+1. ~~**プロフィール編集機能**~~ ✅ 実装済み
    - `/profile/edit`ページ作成
-   - アバター画像アップロード（Supabase Storage）
+   - アカウント名・自己紹介文・アイコン画像・背景画像の設定
+   - 画像クロップ（切り抜き）機能付き
+   - メールアドレスの非公開化
 
 2. **投稿の編集・削除機能**
    - 投稿カードにメニューボタン追加
@@ -468,6 +493,32 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - [types/database.ts](types/database.ts) - `follows` テーブル型追加
    - [types/index.ts](types/index.ts) - `Follow` 型エクスポート追加
 
+### プロフィール編集・画像クロップ機能追加 (2026-02-05)
+1. ✅ データベース拡張
+   - `profiles`テーブルに`background_url`カラム追加
+   - マイグレーション: `supabase/migrations/20260205053201_add_background_url_to_profiles.sql`
+   - Storageポリシー更新（`profiles/{userId}/*`パスを許可）
+   - マイグレーション: `supabase/migrations/20260205055335_add_profile_images_storage_policy.sql`
+2. ✅ パッケージインストール
+   - `react-easy-crop` - 画像クロップUI
+3. ✅ プロフィール編集ページ作成
+   - [app/profile/edit/page.tsx](app/profile/edit/page.tsx) - サーバーコンポーネント
+   - [components/profile-edit-form.tsx](components/profile-edit-form.tsx) - 編集フォーム
+   - アカウント名・自己紹介文・アイコン画像・背景画像の設定
+4. ✅ 画像クロップ機能実装
+   - [components/image-crop-dialog.tsx](components/image-crop-dialog.tsx) - クロップダイアログ
+   - [lib/crop-image.ts](lib/crop-image.ts) - Canvas APIユーティリティ
+   - アイコン: 1:1、背景: 40:9 のアスペクト比
+5. ✅ ユーザープロフィールヘッダー改修
+   - [components/user-profile-header.tsx](components/user-profile-header.tsx)
+   - 背景画像表示、実際のアバター画像表示対応
+   - プロフィール編集ボタン配置
+6. ✅ メールアドレス非公開化
+   - ヘッダーにメールアドレスの代わりにアカウント名を表示
+7. ✅ タイムラインのアバター画像表示修正
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx)
+   - `avatar_url`がある場合は実画像を表示
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -572,4 +623,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-05
-**更新内容**: フォロー機能・ユーザーマイページ・タイムラインタブ切り替え追加
+**更新内容**: プロフィール編集機能・画像クロップ機能・背景画像・メールアドレス非公開化追加

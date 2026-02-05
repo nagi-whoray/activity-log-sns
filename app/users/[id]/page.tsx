@@ -18,7 +18,7 @@ export default async function UserProfilePage({
   // プロフィール情報を取得
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, username, display_name, avatar_url, bio')
+    .select('id, username, display_name, avatar_url, bio, background_url')
     .eq('id', params.id)
     .single()
 
@@ -87,7 +87,7 @@ export default async function UserProfilePage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} />
+      <Header user={user} profileName={isOwnProfile ? (profile.display_name || profile.username) : undefined} />
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
         <div className="space-y-6">

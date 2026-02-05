@@ -126,3 +126,68 @@ export async function deleteMultipleImages(paths: string[]): Promise<void> {
     throw new Error(`画像の削除に失敗しました: ${error.message}`)
   }
 }
+
+/**
+ * プロフィール画像のファイルパスを生成
+ */
+function generateProfileImagePath(userId: string, type: 'avatar' | 'background', fileName: string): string {
+  const timestamp = Date.now()
+  const randomString = Math.random().toString(36).substring(2, 8)
+  const extension = fileName.split('.').pop() || 'jpg'
+  return `profiles/${userId}/${type}-${timestamp}-${randomString}.${extension}`
+}
+
+/**
+ * 既存のURLからストレージパスを抽出
+ */
+function extractPathFromUrl(url: string): string | null {
+  const match = url.match(/\/storage\/v1\/object\/public\/activity-images\/(.+)$/)
+  return match ? match[1] : null
+}
+
+/**
+ * プロフィール画像をアップロード（古い画像は自動削除）
+ */
+export async function uploadProfileImage(
+  file: File,
+  userId: string,
+  type: 'avatar' | 'background',
+  currentUrl: string | null
+): Promise<ImageUploadResult> {
+  const supabase = createClient()
+
+  const validation = validateImageFile(file)
+  if (!validation.valid) {
+    throw new Error(validation.error)
+  }
+
+  // 古い画像を削除
+  if (currentUrl) {
+    const oldPath = extractPathFromUrl(currentUrl)
+    if (oldPath) {
+      await supabase.storage.from(STORAGE_BUCKET).remove([oldPath])
+    }
+  }
+
+  const filePath = generateProfileImagePath(userId, type, file.name)
+
+  const { data, error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    })
+
+  if (error) {
+    throw new Error(`アップロードに失敗しました: ${error.message}`)
+  }
+
+  const { data: urlData } = supabase.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(data.path)
+
+  return {
+    url: urlData.publicUrl,
+    path: data.path,
+  }
+}

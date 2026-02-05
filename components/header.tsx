@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button'
 
 interface HeaderProps {
   user: User | null
+  profileName?: string
 }
 
-export function Header({ user }: HeaderProps) {
+export function Header({ user, profileName }: HeaderProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -28,8 +29,8 @@ export function Header({ user }: HeaderProps) {
             <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
               Activity Log SNS
             </Link>
-            {user && (
-              <p className="text-sm text-muted-foreground">{user.email}</p>
+            {user && profileName && (
+              <p className="text-sm text-muted-foreground">{profileName}</p>
             )}
           </div>
           {user && (

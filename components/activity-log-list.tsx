@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -175,8 +176,20 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <Link href={`/users/${log.user_id}`} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold hover:opacity-80 transition-opacity">
-                    {displayName[0]?.toUpperCase() || 'U'}
+                  <Link href={`/users/${log.user_id}`} className="w-10 h-10 rounded-full overflow-hidden shrink-0 hover:opacity-80 transition-opacity">
+                    {log.profiles?.avatar_url ? (
+                      <Image
+                        src={log.profiles.avatar_url}
+                        alt={displayName}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                        {displayName[0]?.toUpperCase() || 'U'}
+                      </div>
+                    )}
                   </Link>
                   <div>
                     <div className="flex items-center gap-2">

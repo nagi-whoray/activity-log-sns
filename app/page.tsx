@@ -17,6 +17,17 @@ export default async function Home({
 
   const activeTab = searchParams.tab === 'following' ? 'following' : 'all'
 
+  // 自分のプロフィール情報を取得（ヘッダー表示用）
+  let profileName: string | undefined
+  if (user) {
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('display_name, username')
+      .eq('id', user.id)
+      .single()
+    profileName = myProfile?.display_name || myProfile?.username
+  }
+
   // フォロー中のユーザーIDを取得
   let followingIds: string[] = []
   if (user) {
@@ -74,7 +85,7 @@ export default async function Home({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header user={user} />
+      <Header user={user} profileName={profileName} />
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
         <div className="space-y-6">
