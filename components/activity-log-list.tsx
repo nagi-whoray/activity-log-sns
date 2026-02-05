@@ -210,7 +210,7 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                   </div>
                 </div>
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${categoryStyle.bg} ${categoryStyle.text}`}
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${categoryStyle.bg} ${categoryStyle.text}`}
                 >
                   {categoryStyle.icon} {ACTIVITY_CATEGORY_LABELS[log.category]}
                 </span>

@@ -589,6 +589,13 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - Tailwindの `sm:hidden`/`hidden sm:flex` でレスポンシブ切り替え
    - メニュー項目クリック時に自動でメニューを閉じる
 
+### モバイルレイアウト修正 (2026-02-06)
+1. ✅ カテゴリバッジの折り返し問題を修正
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - カテゴリバッジにスタイル追加
+   - `whitespace-nowrap` - テキストの折り返しを防止
+   - `shrink-0` - フレックスボックス内での縮小を防止
+   - 修正前: 「筋トレ」が「筋ト」「レ」に分かれて表示される問題
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -695,4 +702,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: モバイル用ハンバーガーメニュー追加（レスポンシブ対応）
+**更新内容**: モバイルレイアウト修正（カテゴリバッジの折り返し問題）
