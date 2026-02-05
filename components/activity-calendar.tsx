@@ -1,18 +1,30 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 interface ActivityCalendarProps {
-  activityDates: string[]
+  activityDateMap: Record<string, string[]>
   selectedDate: string | null
   userId: string
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
+
+const CATEGORY_COLORS: Record<string, string> = {
+  workout: 'bg-orange-400',
+  study: 'bg-blue-400',
+  beauty: 'bg-pink-400',
+}
+
+const CATEGORY_COLORS_LIGHT: Record<string, string> = {
+  workout: 'bg-white/70',
+  study: 'bg-white/70',
+  beauty: 'bg-white/70',
+}
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate()
@@ -28,14 +40,12 @@ function formatDateString(year: number, month: number, day: number): string {
   return `${year}-${m}-${d}`
 }
 
-export function ActivityCalendar({ activityDates, selectedDate, userId }: ActivityCalendarProps) {
+export function ActivityCalendar({ activityDateMap, selectedDate, userId }: ActivityCalendarProps) {
   const router = useRouter()
 
   const initialDate = selectedDate ? new Date(selectedDate) : new Date()
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth())
-
-  const activityDateSet = useMemo(() => new Set(activityDates), [activityDates])
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth)
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
@@ -117,11 +127,12 @@ export function ActivityCalendar({ activityDates, selectedDate, userId }: Activi
         <div className="grid grid-cols-7">
           {calendarDays.map((day, index) => {
             if (day === null) {
-              return <div key={`empty-${index}`} className="h-9" />
+              return <div key={`empty-${index}`} className="h-11" />
             }
 
             const dateString = formatDateString(currentYear, currentMonth, day)
-            const hasActivity = activityDateSet.has(dateString)
+            const categories = activityDateMap[dateString] || []
+            const hasActivity = categories.length > 0
             const isSelected = dateString === selectedDate
             const isToday = dateString === todayString
             const dayOfWeek = (firstDay + day - 1) % 7
@@ -131,7 +142,7 @@ export function ActivityCalendar({ activityDates, selectedDate, userId }: Activi
                 key={day}
                 onClick={() => hasActivity && handleDateClick(day)}
                 className={`
-                  relative h-9 flex flex-col items-center justify-center rounded-lg text-sm transition-colors
+                  relative h-11 flex flex-col items-center justify-center rounded-lg text-sm transition-colors
                   ${hasActivity && !isSelected ? 'bg-blue-50 text-blue-700 font-semibold cursor-pointer hover:bg-blue-100 ring-1 ring-blue-200' : ''}
                   ${!hasActivity ? 'cursor-default text-gray-400' : ''}
                   ${isSelected ? 'bg-blue-500 text-white font-semibold cursor-pointer hover:bg-blue-600 ring-1 ring-blue-500' : ''}
@@ -142,6 +153,16 @@ export function ActivityCalendar({ activityDates, selectedDate, userId }: Activi
                 `}
               >
                 <span className="leading-none">{day}</span>
+                {hasActivity && (
+                  <div className="flex gap-0.5 mt-0.5">
+                    {categories.map((cat) => (
+                      <span
+                        key={cat}
+                        className={`w-1.5 h-1.5 rounded-full ${isSelected ? CATEGORY_COLORS_LIGHT[cat] : CATEGORY_COLORS[cat]}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </button>
             )
           })}

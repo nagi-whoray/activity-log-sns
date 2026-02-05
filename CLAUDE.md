@@ -500,13 +500,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - 月間グリッドカレンダー（日〜土の7列）
    - 前月/次月ナビゲーション（lucide-react ChevronLeft/ChevronRight）
    - 投稿がある日を青い背景・枠線でハイライト表示
+   - カテゴリ別の色付きドット表示（筋トレ=オレンジ、勉強=ブルー、美容=ピンク）
    - 今日の日付は太字＋枠線で強調
    - 外部ライブラリ不使用（Tailwind CSS + shadcn/ui Cardのみ）
 2. ✅ 日付フィルタリング機能
    - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - `searchParams.date` による投稿フィルタ
    - カレンダーの日付クリックで `?date=YYYY-MM-DD` をURLに追加
    - 同じ日付を再クリック or ✕ボタンでフィルタ解除
-   - カレンダー用の全投稿日は軽量クエリで別途取得（50件制限の影響を受けない）
+   - カレンダー用の全投稿日・カテゴリは軽量クエリで別途取得（50件制限の影響を受けない）
 3. ✅ 配置: UserProfileHeaderとActivityLogListの間
 
 ### プロフィール編集・画像クロップ機能追加 (2026-02-05)

@@ -29,13 +29,21 @@ export default async function UserProfilePage({
     notFound()
   }
 
-  // カレンダー用: このユーザーの全投稿日を取得
+  // カレンダー用: このユーザーの全投稿日とカテゴリを取得
   const { data: activityDateRows } = await supabase
     .from('activity_logs')
-    .select('activity_date')
+    .select('activity_date, category')
     .eq('user_id', params.id)
 
-  const activityDates = Array.from(new Set((activityDateRows || []).map((r) => r.activity_date)))
+  const activityDateMap: Record<string, string[]> = {}
+  for (const r of activityDateRows || []) {
+    if (!activityDateMap[r.activity_date]) {
+      activityDateMap[r.activity_date] = []
+    }
+    if (!activityDateMap[r.activity_date].includes(r.category)) {
+      activityDateMap[r.activity_date].push(r.category)
+    }
+  }
 
   const selectedDate = searchParams.date || null
 
@@ -120,7 +128,7 @@ export default async function UserProfilePage({
             isFollowing={isFollowing}
           />
           <ActivityCalendar
-            activityDates={activityDates}
+            activityDateMap={activityDateMap}
             selectedDate={selectedDate}
             userId={params.id}
           />
