@@ -11,6 +11,9 @@ import { ActivityCategory, ACTIVITY_CATEGORY_LABELS } from '@/types/database'
 import { CommentSection } from '@/components/comment-section'
 import { ActivityImages } from '@/components/ActivityImages'
 import { FollowButton } from '@/components/follow-button'
+import { PostActionsMenu } from '@/components/post-actions-menu'
+import { PostEditDialog } from '@/components/post-edit-dialog'
+import { deleteMultipleImages, extractPathFromUrl } from '@/lib/supabase-storage'
 
 interface ActivityLog {
   id: string
@@ -19,6 +22,7 @@ interface ActivityLog {
   content: string
   activity_date: string
   created_at: string
+  updated_at: string
   user_id: string
   image_url: string | null
   profiles: {
@@ -130,6 +134,44 @@ function LikeButton({
 
 export function ActivityLogList({ activityLogs, currentUserId, followingIds = [], activeTab }: ActivityLogListProps) {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
+  const [editingPost, setEditingPost] = useState<ActivityLog | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleDeletePost = async (post: ActivityLog) => {
+    if (!confirm('この投稿を削除しますか？\nコメントやいいねも一緒に削除されます。')) return
+
+    try {
+      const { error } = await supabase
+        .from('activity_logs')
+        .delete()
+        .eq('id', post.id)
+
+      if (error) throw error
+
+      if (post.image_url) {
+        try {
+          const urls = JSON.parse(post.image_url)
+          if (Array.isArray(urls)) {
+            const paths = urls
+              .map((url: string) => extractPathFromUrl(url))
+              .filter((path): path is string => path !== null)
+
+            if (paths.length > 0) {
+              await deleteMultipleImages(paths)
+            }
+          }
+        } catch {
+          // ignore parse error
+        }
+      }
+
+      router.refresh()
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('投稿の削除に失敗しました')
+    }
+  }
 
   const toggleComments = (logId: string) => {
     setExpandedComments((prev) => {
@@ -200,20 +242,38 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                         isFollowing={followingIds.includes(log.user_id)}
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(log.activity_date).toLocaleDateString('ja-JP', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
+                    <div className="text-sm text-muted-foreground">
+                      <p>
+                        {new Date(log.activity_date).toLocaleDateString('ja-JP', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                      <p className="text-xs">
+                        投稿: {new Date(log.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} {new Date(log.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(log.updated_at) > new Date(log.created_at) && (
+                          <span className="ml-1">
+                            （更新: {new Date(log.updated_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} {new Date(log.updated_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}）
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${categoryStyle.bg} ${categoryStyle.text}`}
-                >
-                  {categoryStyle.icon} {ACTIVITY_CATEGORY_LABELS[log.category]}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${categoryStyle.bg} ${categoryStyle.text}`}
+                  >
+                    {categoryStyle.icon} {ACTIVITY_CATEGORY_LABELS[log.category]}
+                  </span>
+                  {log.user_id === currentUserId && (
+                    <PostActionsMenu
+                      onEdit={() => setEditingPost(log)}
+                      onDelete={() => handleDeletePost(log)}
+                    />
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -252,6 +312,14 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
           </Card>
         )
       })}
+
+      {editingPost && (
+        <PostEditDialog
+          open={!!editingPost}
+          onOpenChange={(open) => !open && setEditingPost(null)}
+          post={editingPost}
+        />
+      )}
     </div>
   )
 }

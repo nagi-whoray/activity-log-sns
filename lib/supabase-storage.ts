@@ -140,7 +140,7 @@ function generateProfileImagePath(userId: string, type: 'avatar' | 'background',
 /**
  * 既存のURLからストレージパスを抽出
  */
-function extractPathFromUrl(url: string): string | null {
+export function extractPathFromUrl(url: string): string | null {
   const match = url.match(/\/storage\/v1\/object\/public\/activity-images\/(.+)$/)
   return match ? match[1] : null
 }

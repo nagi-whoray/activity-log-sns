@@ -39,7 +39,9 @@ components/
   ├── profile-edit-form.tsx    # [Client] プロフィール編集フォーム（画像アップロード・クロップ対応）
   ├── image-crop-dialog.tsx    # [Client] 画像クロップダイアログ（react-easy-crop使用）
   ├── ImageUpload.tsx          # [Client] 画像アップロードコンポーネント
-  └── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
+  ├── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
+  ├── post-actions-menu.tsx    # [Client] 投稿編集・削除メニュー（本人のみ表示）
+  └── post-edit-dialog.tsx     # [Client] 投稿編集モーダルダイアログ
 
 lib/
   ├── supabase/
@@ -289,9 +291,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
    - 画像クロップ（切り抜き）機能付き
    - メールアドレスの非公開化
 
-2. **投稿の編集・削除機能**
-   - 投稿カードにメニューボタン追加
-   - 本人のみ表示
+2. ~~**投稿の編集・削除機能**~~ ✅ 実装済み
+   - 投稿カードに「⋯」メニューボタン追加（本人のみ表示）
+   - 編集: カテゴリ・内容・画像の変更、「（更新）」表示
+   - 削除: 確認ダイアログ付き、コメント・いいねも一緒に削除
 
 3. **エラーハンドリングの改善**
    - トースト通知の実装（sonner推奨）
@@ -589,6 +592,25 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - Tailwindの `sm:hidden`/`hidden sm:flex` でレスポンシブ切り替え
    - メニュー項目クリック時に自動でメニューを閉じる
 
+### 投稿の編集・削除機能追加 (2026-02-06)
+1. ✅ 投稿アクションメニュー作成
+   - [components/post-actions-menu.tsx](components/post-actions-menu.tsx) - 「⋯」メニューコンポーネント
+   - 投稿オーナーのみ表示（編集・削除ボタン）
+2. ✅ 投稿編集ダイアログ作成
+   - [components/post-edit-dialog.tsx](components/post-edit-dialog.tsx) - 編集モーダル
+   - カテゴリ・内容・画像の変更対応
+   - 既存画像の削除・新規画像の追加
+3. ✅ 投稿一覧への統合
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 編集・削除機能統合
+   - 日時表示の改善: 活動日、投稿日時、更新日時を表示
+   - 「（更新: MM/DD HH:MM）」表示で編集済みを明示
+4. ✅ Storage関数エクスポート
+   - [lib/supabase-storage.ts](lib/supabase-storage.ts) - `extractPathFromUrl()`をエクスポート
+5. ✅ 削除時の動作
+   - 確認ダイアログ表示
+   - CASCADE: 紐づくコメント・いいねも自動削除
+   - Storage: 添付画像も削除
+
 ### モバイルレイアウト修正 (2026-02-06)
 1. ✅ 投稿一覧のカテゴリバッジ折り返し修正
    - [components/activity-log-list.tsx](components/activity-log-list.tsx) - カテゴリバッジにスタイル追加
@@ -707,4 +729,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: モバイルレイアウト修正（カテゴリバッジの折り返し問題）
+**更新内容**: 投稿の編集・削除機能追加
