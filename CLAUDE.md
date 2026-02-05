@@ -27,7 +27,7 @@ app/
 
 components/
   ├── ui/                      # shadcn/uiの再利用可能コンポーネント
-  ├── header.tsx               # [Client] ヘッダー（タイムライン・マイページ・ログアウト）
+  ├── header.tsx               # [Client] ヘッダー（タイムライン・マイページ・ログアウト、モバイル用ハンバーガーメニュー）
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
   ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム（画像アップロード対応）
   ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
@@ -578,6 +578,17 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - Site URL: `https://activity-log-sns.vercel.app`
    - Redirect URLs: 本番用・ローカル開発用の両方を登録
 
+### モバイル用ハンバーガーメニュー追加 (2026-02-06)
+1. ✅ ヘッダーのレスポンシブ対応
+   - [components/header.tsx](components/header.tsx) - ハンバーガーメニュー実装
+   - デスクトップ（640px以上）: 従来通りの横並びメニュー
+   - モバイル（640px未満）: ハンバーガーアイコンをタップでメニュー展開
+2. ✅ 実装詳細
+   - `useState`でメニュー開閉状態管理
+   - lucide-react `Menu`/`X` アイコン使用
+   - Tailwindの `sm:hidden`/`hidden sm:flex` でレスポンシブ切り替え
+   - メニュー項目クリック時に自動でメニューを閉じる
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -684,4 +695,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: Vercelデプロイ完了（自動デプロイ設定、Supabase認証URL設定）
+**更新内容**: モバイル用ハンバーガーメニュー追加（レスポンシブ対応）
