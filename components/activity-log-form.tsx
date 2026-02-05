@@ -4,12 +4,18 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS } from '@/types/database'
 import { ImageUpload, ImagePreview } from '@/components/ImageUpload'
 import { uploadMultipleImages } from '@/lib/supabase-storage'
+
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 const CATEGORIES: { value: ActivityCategory; label: string; icon: string }[] = [
   { value: 'workout', label: ACTIVITY_CATEGORY_LABELS.workout, icon: '💪' },
@@ -19,10 +25,9 @@ const CATEGORIES: { value: ActivityCategory; label: string; icon: string }[] = [
 
 export function ActivityLogForm() {
   const [category, setCategory] = useState<ActivityCategory>('workout')
-  const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [activityDate, setActivityDate] = useState(
-    new Date().toISOString().split('T')[0]
+    toLocalDateString(new Date())
   )
   const [images, setImages] = useState<ImagePreview[]>([])
   const [loading, setLoading] = useState(false)
@@ -33,7 +38,7 @@ export function ActivityLogForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim() || !content.trim()) return
+    if (!content.trim()) return
     if (isCompressing) return
 
     setLoading(true)
@@ -81,7 +86,7 @@ export function ActivityLogForm() {
       const { error } = await supabase.from('activity_logs').insert({
         user_id: user.id,
         category,
-        title: title.trim(),
+        title: '',
         content: content.trim(),
         activity_date: activityDate,
         image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
@@ -92,9 +97,8 @@ export function ActivityLogForm() {
       // プレビューURLを解放
       images.forEach((img) => URL.revokeObjectURL(img.previewUrl))
 
-      setTitle('')
       setContent('')
-      setActivityDate(new Date().toISOString().split('T')[0])
+      setActivityDate(toLocalDateString(new Date()))
       setImages([])
       router.refresh()
     } catch (error: unknown) {
@@ -134,29 +138,19 @@ export function ActivityLogForm() {
             </div>
           </div>
 
-          {/* タイトル */}
-          <div className="space-y-2">
-            <Label htmlFor="title">タイトル</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="例: 朝のランニング30分"
-              disabled={loading}
-              maxLength={100}
-            />
-          </div>
-
           {/* 活動日 */}
           <div className="space-y-2">
             <Label htmlFor="activityDate">活動日</Label>
-            <Input
+            <select
               id="activityDate"
-              type="date"
               value={activityDate}
               onChange={(e) => setActivityDate(e.target.value)}
               disabled={loading}
-            />
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value={toLocalDateString(new Date())}>今日（{toLocalDateString(new Date()).replace(/-/g, '/')}）</option>
+              <option value={toLocalDateString(new Date(Date.now() - 86400000))}>昨日（{toLocalDateString(new Date(Date.now() - 86400000)).replace(/-/g, '/')}）</option>
+            </select>
           </div>
 
           {/* 内容 */}
@@ -189,7 +183,7 @@ export function ActivityLogForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={loading || !title.trim() || !content.trim() || isCompressing}
+            disabled={loading || !content.trim() || isCompressing}
           >
             {loading ? '投稿中...' : isCompressing ? '画像を処理中...' : '投稿する'}
           </Button>

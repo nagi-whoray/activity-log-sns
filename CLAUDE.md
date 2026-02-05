@@ -510,6 +510,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - カレンダー用の全投稿日・カテゴリは軽量クエリで別途取得（50件制限の影響を受けない）
 3. ✅ 配置: UserProfileHeaderとActivityLogListの間
 
+### 投稿フォーム改善 (2026-02-06)
+1. ✅ タイトル欄の削除
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - `title`のstate・入力欄を削除
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - タイトル表示（`<h3>`）を削除
+   - DBのNOT NULL制約維持のため `title: ''` を送信
+2. ✅ 活動日の入力を「今日」「昨日」の選択リストに変更
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - `<input type="date">` → `<select>` に変更
+   - 選択肢: 「今日（YYYY/MM/DD）」「昨日（YYYY/MM/DD）」
+   - `toISOString()`（UTC）→ ローカルタイムゾーン対応の`toLocalDateString()`ヘルパーで日付ずれを修正
+
 ### プロフィール編集・画像クロップ機能追加 (2026-02-05)
 1. ✅ データベース拡張
    - `profiles`テーブルに`background_url`カラム追加
@@ -640,4 +650,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: マイページに投稿カレンダー機能追加（月間表示・日付フィルタリング）
+**更新内容**: 投稿フォーム改善（タイトル削除、活動日を今日/昨日の選択リストに変更）

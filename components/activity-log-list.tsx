@@ -217,7 +217,6 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <h3 className="font-semibold text-lg">{log.title}</h3>
               <p className="whitespace-pre-wrap text-gray-700">{log.content}</p>
 
               {/* 画像表示 */}
