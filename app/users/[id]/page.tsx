@@ -2,12 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { UserProfileHeader } from '@/components/user-profile-header'
+import { ActivityCalendar } from '@/components/activity-calendar'
 import { ActivityLogList } from '@/components/activity-log-list'
 
 export default async function UserProfilePage({
   params,
+  searchParams,
 }: {
   params: { id: string }
+  searchParams: { date?: string }
 }) {
   const supabase = await createClient()
 
@@ -26,8 +29,18 @@ export default async function UserProfilePage({
     notFound()
   }
 
+  // カレンダー用: このユーザーの全投稿日を取得
+  const { data: activityDateRows } = await supabase
+    .from('activity_logs')
+    .select('activity_date')
+    .eq('user_id', params.id)
+
+  const activityDates = Array.from(new Set((activityDateRows || []).map((r) => r.activity_date)))
+
+  const selectedDate = searchParams.date || null
+
   // このユーザーの活動ログを取得
-  const { data: activityLogs } = await supabase
+  let activityLogsQuery = supabase
     .from('activity_logs')
     .select(`
       *,
@@ -55,6 +68,12 @@ export default async function UserProfilePage({
       )
     `)
     .eq('user_id', params.id)
+
+  if (selectedDate) {
+    activityLogsQuery = activityLogsQuery.eq('activity_date', selectedDate)
+  }
+
+  const { data: activityLogs } = await activityLogsQuery
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -93,12 +112,17 @@ export default async function UserProfilePage({
         <div className="space-y-6">
           <UserProfileHeader
             profile={profile}
-            postCount={activityLogs?.length || 0}
+            postCount={activityDateRows?.length || 0}
             followerCount={followerCount || 0}
             followingCount={followingCount || 0}
             isOwnProfile={isOwnProfile}
             currentUserId={user?.id || null}
             isFollowing={isFollowing}
+          />
+          <ActivityCalendar
+            activityDates={activityDates}
+            selectedDate={selectedDate}
+            userId={params.id}
           />
           <ActivityLogList
             activityLogs={activityLogs || []}

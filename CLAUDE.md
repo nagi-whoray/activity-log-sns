@@ -22,7 +22,7 @@ app/
   ├── auth/callback/      # Supabase認証後のコールバック処理
   ├── login/              # 未認証ユーザー向けログインページ
   ├── profile/edit/       # プロフィール編集ページ
-  ├── users/[id]/         # ユーザーマイページ（プロフィール＋投稿一覧）
+  ├── users/[id]/         # ユーザーマイページ（プロフィール＋投稿一覧＋カレンダー）
   └── page.tsx            # メインページ（タイムライン、タブ切り替え対応）
 
 components/
@@ -31,6 +31,7 @@ components/
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
   ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム（画像アップロード対応）
   ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
+  ├── activity-calendar.tsx    # [Client] 投稿カレンダー（月間表示・日付フィルタ対応）
   ├── comment-section.tsx      # [Client] コメント機能
   ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
   ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全投稿/フォロー中）
@@ -493,6 +494,21 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
    - [types/database.ts](types/database.ts) - `follows` テーブル型追加
    - [types/index.ts](types/index.ts) - `Follow` 型エクスポート追加
 
+### マイページ投稿カレンダー追加 (2026-02-06)
+1. ✅ 投稿カレンダーコンポーネント作成
+   - [components/activity-calendar.tsx](components/activity-calendar.tsx) - Client Component
+   - 月間グリッドカレンダー（日〜土の7列）
+   - 前月/次月ナビゲーション（lucide-react ChevronLeft/ChevronRight）
+   - 投稿がある日を青い背景・枠線でハイライト表示
+   - 今日の日付は太字＋枠線で強調
+   - 外部ライブラリ不使用（Tailwind CSS + shadcn/ui Cardのみ）
+2. ✅ 日付フィルタリング機能
+   - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - `searchParams.date` による投稿フィルタ
+   - カレンダーの日付クリックで `?date=YYYY-MM-DD` をURLに追加
+   - 同じ日付を再クリック or ✕ボタンでフィルタ解除
+   - カレンダー用の全投稿日は軽量クエリで別途取得（50件制限の影響を受けない）
+3. ✅ 配置: UserProfileHeaderとActivityLogListの間
+
 ### プロフィール編集・画像クロップ機能追加 (2026-02-05)
 1. ✅ データベース拡張
    - `profiles`テーブルに`background_url`カラム追加
@@ -622,5 +638,5 @@ gh pr create --title "機能追加" --body "説明"
 
 ---
 
-**最終更新**: 2026-02-05
-**更新内容**: プロフィール編集機能・画像クロップ機能・背景画像・メールアドレス非公開化追加
+**最終更新**: 2026-02-06
+**更新内容**: マイページに投稿カレンダー機能追加（月間表示・日付フィルタリング）
