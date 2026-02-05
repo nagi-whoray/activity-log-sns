@@ -216,8 +216,8 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
         return (
           <Card key={log.id}>
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <Link href={`/users/${log.user_id}`} className="w-10 h-10 rounded-full overflow-hidden shrink-0 hover:opacity-80 transition-opacity">
                     {log.profiles?.avatar_url ? (
                       <Image
@@ -233,9 +233,9 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                       </div>
                     )}
                   </Link>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <Link href={`/users/${log.user_id}`} className="font-semibold hover:underline">{displayName}</Link>
+                      <Link href={`/users/${log.user_id}`} className="font-semibold hover:underline truncate">{displayName}</Link>
                       <FollowButton
                         targetUserId={log.user_id}
                         currentUserId={currentUserId}
@@ -250,7 +250,7 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                           day: 'numeric',
                         })}
                       </p>
-                      <p className="text-xs whitespace-nowrap">
+                      <p className="text-xs truncate">
                         {new Date(log.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                         {new Date(log.updated_at) > new Date(log.created_at) && (
                           <span className="ml-1">
@@ -261,9 +261,9 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${categoryStyle.bg} ${categoryStyle.text}`}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${categoryStyle.bg} ${categoryStyle.text}`}
                   >
                     {categoryStyle.icon} {ACTIVITY_CATEGORY_LABELS[log.category]}
                   </span>

@@ -618,6 +618,10 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - [components/activity-log-list.tsx](components/activity-log-list.tsx) - カテゴリバッジにスタイル追加
    - `whitespace-nowrap` - テキストの折り返しを防止
    - `shrink-0` - フレックスボックス内での縮小を防止
+2. ✅ 投稿カードのオーバーフロー修正
+   - 左側コンテナ: `min-w-0 flex-1` で縮小可能に
+   - 右側コンテナ: `shrink-0` で縮小しない
+   - 日時表示: `truncate` で長い場合は省略
 2. ✅ 投稿フォームのカテゴリボタン折り返し修正
    - [components/activity-log-form.tsx](components/activity-log-form.tsx) - カテゴリ選択ボタンにスタイル追加
    - `whitespace-nowrap` - テキストの折り返しを防止
