@@ -603,7 +603,9 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
 3. ✅ 投稿一覧への統合
    - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 編集・削除機能統合
    - 日時表示の改善: 活動日、投稿日時、更新日時を表示
-   - 「（更新: MM/DD HH:MM）」表示で編集済みを明示
+   - 投稿日時: `yyyy/MM/dd HH:mm` 形式
+   - 更新日時: `（更新 yyyy/MM/dd HH:mm）` 形式で編集済みを明示
+   - `whitespace-nowrap` でモバイルでの改行を防止
 4. ✅ Storage関数エクスポート
    - [lib/supabase-storage.ts](lib/supabase-storage.ts) - `extractPathFromUrl()`をエクスポート
 5. ✅ 削除時の動作
