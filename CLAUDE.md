@@ -590,10 +590,15 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - メニュー項目クリック時に自動でメニューを閉じる
 
 ### モバイルレイアウト修正 (2026-02-06)
-1. ✅ カテゴリバッジの折り返し問題を修正
+1. ✅ 投稿一覧のカテゴリバッジ折り返し修正
    - [components/activity-log-list.tsx](components/activity-log-list.tsx) - カテゴリバッジにスタイル追加
    - `whitespace-nowrap` - テキストの折り返しを防止
    - `shrink-0` - フレックスボックス内での縮小を防止
+2. ✅ 投稿フォームのカテゴリボタン折り返し修正
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - カテゴリ選択ボタンにスタイル追加
+   - `whitespace-nowrap` - テキストの折り返しを防止
+   - `px-2 sm:px-3` - モバイルでパディングを縮小
+   - `text-base sm:text-lg` / `text-xs sm:text-sm` - モバイルでフォントサイズを縮小
    - 修正前: 「筋トレ」が「筋ト」「レ」に分かれて表示される問題
 
 ### データベーススキーマ確認方法

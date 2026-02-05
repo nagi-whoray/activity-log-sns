@@ -125,14 +125,14 @@ export function ActivityLogForm() {
                   key={cat.value}
                   type="button"
                   onClick={() => setCategory(cat.value)}
-                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${
+                  className={`flex-1 py-2 px-2 sm:px-3 rounded-lg border-2 transition-all whitespace-nowrap ${
                     category === cat.value
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <span className="text-lg">{cat.icon}</span>
-                  <span className="ml-1 text-sm font-medium">{cat.label}</span>
+                  <span className="text-base sm:text-lg">{cat.icon}</span>
+                  <span className="ml-1 text-xs sm:text-sm font-medium">{cat.label}</span>
                 </button>
               ))}
             </div>
