@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType, LOG_TYPE_LABELS } from '@/types/database'
 import { ImageUpload, ImagePreview } from '@/components/ImageUpload'
 import { uploadMultipleImages } from '@/lib/supabase-storage'
-import { AchievementCelebrationModal } from '@/components/achievement-celebration-modal'
+import { EncouragementModal } from '@/components/encouragement-modal'
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear()
@@ -33,7 +33,10 @@ export function ActivityLogForm() {
   )
   const [images, setImages] = useState<ImagePreview[]>([])
   const [loading, setLoading] = useState(false)
-  const [showCelebration, setShowCelebration] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [submittedLogType, setSubmittedLogType] = useState<LogType>('activity')
   const router = useRouter()
   const supabase = createClient()
 
@@ -105,11 +108,32 @@ export function ActivityLogForm() {
       setActivityDate(toLocalDateString(new Date()))
       setImages([])
 
-      // 達成ログの場合はお祝いモーダルを表示
-      if (logType === 'achievement') {
-        setShowCelebration(true)
-      } else {
-        router.refresh()
+      // モーダルを表示してメッセージを生成
+      setSubmittedLogType(logType)
+      setShowModal(true)
+      setIsGenerating(true)
+
+      try {
+        const res = await fetch('/api/generate-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            logType,
+            category,
+            content: content.trim(),
+            userId: user.id
+          })
+        })
+        const data = await res.json()
+        setModalMessage(data.message || (logType === 'achievement'
+          ? '素晴らしい達成を記録しました！'
+          : '活動を記録しました。継続は力なり！'))
+      } catch {
+        setModalMessage(logType === 'achievement'
+          ? '素晴らしい達成を記録しました！'
+          : '活動を記録しました。継続は力なり！')
+      } finally {
+        setIsGenerating(false)
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '投稿に失敗しました'
@@ -119,8 +143,9 @@ export function ActivityLogForm() {
     }
   }
 
-  const handleCelebrationClose = () => {
-    setShowCelebration(false)
+  const handleModalClose = () => {
+    setShowModal(false)
+    setModalMessage('')
     router.refresh()
   }
 
@@ -236,9 +261,12 @@ export function ActivityLogForm() {
         </form>
       </CardContent>
 
-      <AchievementCelebrationModal
-        open={showCelebration}
-        onClose={handleCelebrationClose}
+      <EncouragementModal
+        open={showModal}
+        onClose={handleModalClose}
+        logType={submittedLogType}
+        message={modalMessage}
+        isLoading={isGenerating}
       />
     </Card>
   )

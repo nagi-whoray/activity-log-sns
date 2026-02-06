@@ -9,19 +9,30 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { LogType } from '@/types/database'
 
-interface AchievementCelebrationModalProps {
+interface EncouragementModalProps {
   open: boolean
   onClose: () => void
+  logType: LogType
+  message: string
+  isLoading?: boolean
 }
 
-export function AchievementCelebrationModal({ open, onClose }: AchievementCelebrationModalProps) {
+export function EncouragementModal({
+  open,
+  onClose,
+  logType,
+  message,
+  isLoading
+}: EncouragementModalProps) {
+  const isAchievement = logType === 'achievement'
+
   useEffect(() => {
-    if (open) {
-      // 紙吹雪アニメーション発火
+    if (open && isAchievement) {
+      // 達成ログの場合のみ紙吹雪
       const duration = 2000
       const end = Date.now() + duration
-
       const frame = () => {
         confetti({
           particleCount: 3,
@@ -37,33 +48,33 @@ export function AchievementCelebrationModal({ open, onClose }: AchievementCelebr
           origin: { x: 1 },
           colors: ['#FFD700', '#FFA500', '#FF6347']
         })
-
         if (Date.now() < end) {
           requestAnimationFrame(frame)
         }
       }
       frame()
     }
-  }, [open])
+  }, [open, isAchievement])
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md text-center">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            🏆 達成おめでとう！
+            {isAchievement ? '🏆 達成おめでとう！' : '💪 お疲れさまです！'}
           </DialogTitle>
         </DialogHeader>
         <div className="py-6">
-          <p className="text-6xl mb-4 animate-bounce">🎉</p>
-          <p className="text-muted-foreground">
-            素晴らしい達成を記録しました！
+          <p className={`text-6xl mb-4 ${isAchievement ? 'animate-bounce' : ''}`}>
+            {isAchievement ? '🎉' : '✨'}
           </p>
-          <p className="text-muted-foreground mt-1">
-            この調子で頑張りましょう！
-          </p>
+          {isLoading ? (
+            <p className="text-muted-foreground">メッセージを生成中...</p>
+          ) : (
+            <p className="text-muted-foreground whitespace-pre-wrap">{message}</p>
+          )}
         </div>
-        <Button onClick={onClose} className="w-full">
+        <Button onClick={onClose} className="w-full" disabled={isLoading}>
           閉じる
         </Button>
       </DialogContent>

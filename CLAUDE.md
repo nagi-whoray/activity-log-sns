@@ -1,5 +1,7 @@
 # Activity Log SNS - 開発メモ
 
+**【重要】コメントなどは必ず全て日本語にしてください**
+
 このドキュメントは、開発者とAIアシスタントのためのプロジェクト情報を記録しています。
 
 ## プロジェクト概要
@@ -11,6 +13,7 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 - **スタイリング**: Tailwind CSS + shadcn/ui
 - **画像処理**: react-easy-crop（クロップ）、browser-image-compression（圧縮）
 - **アニメーション**: canvas-confetti（お祝い紙吹雪）
+- **AI**: Anthropic Claude API (@anthropic-ai/sdk) - 投稿時の動的メッセージ生成
 - **バックエンド**: Supabase (Auth, Database, RLS, Storage)
 - **状態管理**: Server Components + Client Components
 
@@ -20,6 +23,8 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 
 ```
 app/
+  ├── api/
+  │   └── generate-message/  # Claude APIを使ったメッセージ生成エンドポイント
   ├── auth/callback/      # Supabase認証後のコールバック処理
   ├── login/              # 未認証ユーザー向けログインページ
   ├── profile/edit/       # プロフィール編集ページ
@@ -43,7 +48,7 @@ components/
   ├── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
   ├── post-actions-menu.tsx    # [Client] 投稿編集・削除メニュー（本人のみ表示）
   ├── post-edit-dialog.tsx     # [Client] 投稿編集モーダルダイアログ
-  └── achievement-celebration-modal.tsx  # [Client] 達成ログ投稿時のお祝いモーダル（confetti）
+  └── encouragement-modal.tsx  # [Client] 投稿時の激励/祝福モーダル（Claude API生成メッセージ、達成時confetti）
 
 lib/
   ├── supabase/
@@ -671,19 +676,24 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - 達成ログがある日: 金色ハイライト（`bg-amber-50`, `ring-amber-200`）
    - 活動ログのみの日: 青色ハイライト（従来通り）
 
-### 達成ログ投稿時お祝いモーダル追加 (2026-02-06)
+### Claude APIによる動的メッセージ生成 (2026-02-06)
 1. ✅ パッケージインストール
+   - `@anthropic-ai/sdk` - Anthropic Claude API SDK
    - `canvas-confetti` - 紙吹雪アニメーションライブラリ
-   - `@types/canvas-confetti` - 型定義
-2. ✅ お祝いモーダルコンポーネント作成
-   - [components/achievement-celebration-modal.tsx](components/achievement-celebration-modal.tsx)
-   - 「🏆 達成おめでとう！」モーダル表示
-   - 金色の紙吹雪が左右から2秒間降るアニメーション
-   - 🎉絵文字のバウンスアニメーション
-3. ✅ 投稿フォーム統合
-   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - モーダル表示ロジック追加
-   - 達成ログ投稿成功時のみモーダル表示
-   - 活動ログ投稿時は従来通り即時リフレッシュ
+2. ✅ APIルート作成
+   - [app/api/generate-message/route.ts](app/api/generate-message/route.ts)
+   - モデル: `claude-3-haiku-20240307`（高速レスポンス用）
+   - ユーザーの過去の活動履歴を元にパーソナライズされたメッセージを生成
+   - 連続活動日数（streak）、活動/達成回数をプロンプトに含める
+3. ✅ 激励/祝福モーダルコンポーネント
+   - [components/encouragement-modal.tsx](components/encouragement-modal.tsx)
+   - 活動ログ: 「💪 お疲れさまです！」+ 動的メッセージ
+   - 達成ログ: 「🏆 達成おめでとう！」+ 動的メッセージ + 紙吹雪アニメーション
+   - メッセージ生成中は「メッセージを生成中...」表示
+   - API失敗時はフォールバックメッセージを表示
+4. ✅ 環境変数
+   - `ANTHROPIC_API_KEY` - Claude API認証キー（.env.local、サーバーサイド専用）
+   - 本番環境: Vercel Environment Variablesに設定が必要
 
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
@@ -791,4 +801,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: マイページフィルター・カレンダー金色ハイライト・達成ログお祝いモーダル追加
+**更新内容**: Claude APIによる動的メッセージ生成機能追加
