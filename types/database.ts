@@ -16,6 +16,15 @@ export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
   beauty: '美容',
 }
 
+// ログタイプの型（活動ログ/達成ログ）
+export type LogType = 'activity' | 'achievement'
+
+// ログタイプの日本語ラベル
+export const LOG_TYPE_LABELS: Record<LogType, string> = {
+  activity: '活動ログ',
+  achievement: '達成ログ',
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -63,6 +72,7 @@ export interface Database {
           content: string
           activity_date: string
           image_url: string | null
+          log_type: LogType
           created_at: string
           updated_at: string
         }
@@ -74,6 +84,7 @@ export interface Database {
           content: string
           activity_date?: string
           image_url?: string | null
+          log_type?: LogType
           created_at?: string
           updated_at?: string
         }
@@ -85,6 +96,7 @@ export interface Database {
           content?: string
           activity_date?: string
           image_url?: string | null
+          log_type?: LogType
           created_at?: string
           updated_at?: string
         }
@@ -169,6 +181,7 @@ export interface Database {
           content: string
           activity_date: string
           image_url: string | null
+          log_type: LogType
           created_at: string
           updated_at: string
           username: string

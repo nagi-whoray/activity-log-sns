@@ -7,7 +7,8 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { ActivityCategory, ACTIVITY_CATEGORY_LABELS } from '@/types/database'
+import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType } from '@/types/database'
+import { TabType } from '@/components/timeline-tabs'
 import { CommentSection } from '@/components/comment-section'
 import { ActivityImages } from '@/components/ActivityImages'
 import { FollowButton } from '@/components/follow-button'
@@ -25,6 +26,7 @@ interface ActivityLog {
   updated_at: string
   user_id: string
   image_url: string | null
+  log_type: LogType
   profiles: {
     id: string
     username: string
@@ -50,7 +52,8 @@ interface ActivityLogListProps {
   activityLogs: ActivityLog[]
   currentUserId: string | null
   followingIds?: string[]
-  activeTab?: 'all' | 'following'
+  activeTab?: TabType
+  activeCategory?: ActivityCategory | null
 }
 
 const CATEGORY_STYLES: Record<ActivityCategory, { bg: string; text: string; icon: string }> = {
@@ -132,7 +135,7 @@ function LikeButton({
   )
 }
 
-export function ActivityLogList({ activityLogs, currentUserId, followingIds = [], activeTab }: ActivityLogListProps) {
+export function ActivityLogList({ activityLogs, currentUserId, followingIds = [], activeTab, activeCategory }: ActivityLogListProps) {
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
   const [editingPost, setEditingPost] = useState<ActivityLog | null>(null)
   const router = useRouter()
@@ -186,23 +189,38 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
   }
 
   if (activityLogs.length === 0) {
+    const getEmptyMessage = () => {
+      const categoryLabel = activeCategory ? ACTIVITY_CATEGORY_LABELS[activeCategory] : null
+
+      if (activeTab === 'following') {
+        return {
+          main: 'フォロー中のユーザーの投稿がありません',
+          sub: '「全部」タブからユーザーをフォローしてみましょう！'
+        }
+      } else if (activeTab === 'activity') {
+        return {
+          main: categoryLabel ? `${categoryLabel}の活動ログがありません` : '活動ログがありません',
+          sub: '最初の活動を記録してみましょう！'
+        }
+      } else if (activeTab === 'achievement') {
+        return {
+          main: categoryLabel ? `${categoryLabel}の達成ログがありません` : '達成ログがありません',
+          sub: '達成したことを記録してみましょう！'
+        }
+      } else {
+        return {
+          main: categoryLabel ? `${categoryLabel}のログがありません` : 'まだログがありません',
+          sub: '最初の記録をしてみましょう！'
+        }
+      }
+    }
+
+    const message = getEmptyMessage()
+
     return (
       <div className="text-center py-12">
-        {activeTab === 'following' ? (
-          <>
-            <p className="text-muted-foreground">フォロー中のユーザーの投稿がありません</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              「全ての投稿」タブからユーザーをフォローしてみましょう！
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-muted-foreground">まだ活動ログがありません</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              最初の活動を記録してみましょう！
-            </p>
-          </>
-        )}
+        <p className="text-muted-foreground">{message.main}</p>
+        <p className="text-sm text-muted-foreground mt-2">{message.sub}</p>
       </div>
     )
   }
@@ -213,8 +231,10 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
         const categoryStyle = CATEGORY_STYLES[log.category]
         const displayName = log.profiles?.display_name || log.profiles?.username || 'Unknown User'
 
+        const isAchievement = log.log_type === 'achievement'
+
         return (
-          <Card key={log.id}>
+          <Card key={log.id} className={isAchievement ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200' : ''}>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -262,6 +282,11 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {isAchievement && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200">
+                      🏆 達成
+                    </span>
+                  )}
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${categoryStyle.bg} ${categoryStyle.text}`}
                   >

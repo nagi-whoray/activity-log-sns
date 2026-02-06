@@ -29,12 +29,12 @@ components/
   ├── ui/                      # shadcn/uiの再利用可能コンポーネント
   ├── header.tsx               # [Client] ヘッダー（タイムライン・マイページ・ログアウト、モバイル用ハンバーガーメニュー）
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
-  ├── activity-log-form.tsx    # [Client] 活動ログ投稿フォーム（画像アップロード対応）
+  ├── activity-log-form.tsx    # [Client] 活動ログ/達成ログ投稿フォーム（ログタイプ選択・画像アップロード対応）
   ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
   ├── activity-calendar.tsx    # [Client] 投稿カレンダー（月間表示・日付フィルタ対応）
   ├── comment-section.tsx      # [Client] コメント機能
   ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
-  ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全投稿/フォロー中）
+  ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全部/活動ログ/達成ログ/フォロー中）+ カテゴリフィルタ
   ├── user-profile-header.tsx  # [Server] ユーザープロフィールヘッダー
   ├── profile-edit-form.tsx    # [Client] プロフィール編集フォーム（画像アップロード・クロップ対応）
   ├── image-crop-dialog.tsx    # [Client] 画像クロップダイアログ（react-easy-crop使用）
@@ -90,7 +90,7 @@ created_at    TIMESTAMP
 updated_at    TIMESTAMP
 ```
 
-#### テーブル: activity_logs（活動ログ）
+#### テーブル: activity_logs（活動ログ/達成ログ）
 ```sql
 id            UUID PRIMARY KEY
 user_id       UUID (profiles参照)
@@ -99,9 +99,16 @@ title         TEXT NOT NULL
 content       TEXT NOT NULL
 activity_date DATE DEFAULT CURRENT_DATE
 image_url     TEXT
+log_type      TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
 created_at    TIMESTAMP
 updated_at    TIMESTAMP
 ```
+
+#### ログタイプ
+| 値 | 日本語 | アイコン | 説明 |
+|---|--------|---------|------|
+| `activity` | 活動ログ | 📝 | 日々の活動の記録 |
+| `achievement` | 達成ログ | 🏆 | 達成したことの記録 |
 
 #### テーブル: likes（いいね）
 ```sql
@@ -629,6 +636,27 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - `text-base sm:text-lg` / `text-xs sm:text-sm` - モバイルでフォントサイズを縮小
    - 修正前: 「筋トレ」が「筋ト」「レ」に分かれて表示される問題
 
+### 達成ログ機能・2段階フィルタリング追加 (2026-02-06)
+1. ✅ データベース拡張
+   - `activity_logs`テーブルに`log_type`カラム追加（'activity' | 'achievement'）
+   - マイグレーション: `supabase/migrations/20260206090000_add_log_type_to_activity_logs.sql`
+   - インデックス追加（`log_type`, `log_type + created_at`）
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `LogType`型、`LOG_TYPE_LABELS`追加
+3. ✅ 投稿フォーム拡張
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx)
+   - ログタイプ選択UI追加（📝活動ログ / 🏆達成ログ）
+   - 達成ログ選択時: 「活動日」→「達成日」、プレースホルダー変更
+4. ✅ タイムライン2段階フィルタリング
+   - [components/timeline-tabs.tsx](components/timeline-tabs.tsx) - 4タブ + カテゴリフィルタ
+   - 第1段階（タブ）: 全部 / 活動ログ / 達成ログ / フォロー中
+   - 第2段階（ボタン）: 全て / 💪筋トレ / 📚勉強 / ✨美容
+   - URLパラメータ: `?tab=activity&category=workout`
+5. ✅ 投稿リスト更新
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx)
+   - 達成ログの視覚的区別（🏆バッジ、金色グラデーション背景）
+   - タブ・カテゴリ別の空状態メッセージ
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -735,4 +763,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: 投稿の編集・削除機能追加
+**更新内容**: 達成ログ機能・2段階タイムラインフィルタリング追加

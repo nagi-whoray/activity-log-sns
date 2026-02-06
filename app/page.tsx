@@ -2,12 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { ActivityLogList } from '@/components/activity-log-list'
 import { ActivityLogForm } from '@/components/activity-log-form'
 import { Header } from '@/components/header'
-import { TimelineTabs } from '@/components/timeline-tabs'
+import { TimelineTabs, TabType } from '@/components/timeline-tabs'
+import { ActivityCategory } from '@/types/database'
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { tab?: string }
+  searchParams: { tab?: string; category?: string }
 }) {
   const supabase = await createClient()
 
@@ -15,7 +16,19 @@ export default async function Home({
     data: { user },
   } = await supabase.auth.getUser()
 
-  const activeTab = searchParams.tab === 'following' ? 'following' : 'all'
+  // タブパラメータの解析
+  const tabParam = searchParams.tab
+  let activeTab: TabType = 'all'
+  if (tabParam === 'following') activeTab = 'following'
+  else if (tabParam === 'activity') activeTab = 'activity'
+  else if (tabParam === 'achievement') activeTab = 'achievement'
+
+  // カテゴリパラメータの解析
+  const categoryParam = searchParams.category
+  let activeCategory: ActivityCategory | null = null
+  if (categoryParam === 'workout' || categoryParam === 'study' || categoryParam === 'beauty') {
+    activeCategory = categoryParam
+  }
 
   // 自分のプロフィール情報を取得（ヘッダー表示用）
   let profileName: string | undefined
@@ -75,8 +88,19 @@ export default async function Home({
       .order('created_at', { ascending: false })
       .limit(50)
 
+    // ログタイプでフィルタリング
     if (activeTab === 'following') {
       query = query.in('user_id', followingIds)
+    } else if (activeTab === 'activity') {
+      query = query.eq('log_type', 'activity')
+    } else if (activeTab === 'achievement') {
+      query = query.eq('log_type', 'achievement')
+    }
+    // 'all' は両方表示なのでフィルタなし
+
+    // カテゴリでフィルタリング
+    if (activeCategory) {
+      query = query.eq('category', activeCategory)
     }
 
     const { data } = await query
@@ -90,12 +114,13 @@ export default async function Home({
       <main className="container mx-auto max-w-2xl px-4 py-8">
         <div className="space-y-6">
           <ActivityLogForm />
-          <TimelineTabs activeTab={activeTab} />
+          <TimelineTabs activeTab={activeTab} activeCategory={activeCategory} />
           <ActivityLogList
             activityLogs={activityLogs || []}
             currentUserId={user?.id || null}
             followingIds={followingIds}
             activeTab={activeTab}
+            activeCategory={activeCategory}
           />
         </div>
       </main>
