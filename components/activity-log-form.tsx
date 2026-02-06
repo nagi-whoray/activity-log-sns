@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType, LOG_TYPE_LABELS } from '@/types/database'
 import { ImageUpload, ImagePreview } from '@/components/ImageUpload'
 import { uploadMultipleImages } from '@/lib/supabase-storage'
+import { AchievementCelebrationModal } from '@/components/achievement-celebration-modal'
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear()
@@ -32,6 +33,7 @@ export function ActivityLogForm() {
   )
   const [images, setImages] = useState<ImagePreview[]>([])
   const [loading, setLoading] = useState(false)
+  const [showCelebration, setShowCelebration] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -102,13 +104,24 @@ export function ActivityLogForm() {
       setContent('')
       setActivityDate(toLocalDateString(new Date()))
       setImages([])
-      router.refresh()
+
+      // 達成ログの場合はお祝いモーダルを表示
+      if (logType === 'achievement') {
+        setShowCelebration(true)
+      } else {
+        router.refresh()
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : '投稿に失敗しました'
       alert(message)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCelebrationClose = () => {
+    setShowCelebration(false)
+    router.refresh()
   }
 
   return (
@@ -222,6 +235,11 @@ export function ActivityLogForm() {
           </Button>
         </form>
       </CardContent>
+
+      <AchievementCelebrationModal
+        open={showCelebration}
+        onClose={handleCelebrationClose}
+      />
     </Card>
   )
 }
