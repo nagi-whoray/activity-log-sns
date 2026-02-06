@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 interface ActivityCalendarProps {
-  activityDateMap: Record<string, string[]>
+  activityDateMap: Record<string, { categories: string[], hasAchievement: boolean }>
   selectedDate: string | null
   userId: string
 }
@@ -131,11 +131,21 @@ export function ActivityCalendar({ activityDateMap, selectedDate, userId }: Acti
             }
 
             const dateString = formatDateString(currentYear, currentMonth, day)
-            const categories = activityDateMap[dateString] || []
+            const dateData = activityDateMap[dateString] || { categories: [], hasAchievement: false }
+            const categories = dateData.categories
+            const hasAchievement = dateData.hasAchievement
             const hasActivity = categories.length > 0
             const isSelected = dateString === selectedDate
             const isToday = dateString === todayString
             const dayOfWeek = (firstDay + day - 1) % 7
+
+            // 達成ログがある場合は金色、そうでなければ青色
+            const highlightBg = hasAchievement ? 'bg-amber-50' : 'bg-blue-50'
+            const highlightText = hasAchievement ? 'text-amber-700' : 'text-blue-700'
+            const highlightRing = hasAchievement ? 'ring-amber-200' : 'ring-blue-200'
+            const highlightHover = hasAchievement ? 'hover:bg-amber-100' : 'hover:bg-blue-100'
+            const selectedBg = hasAchievement ? 'bg-amber-500 hover:bg-amber-600 ring-amber-500' : 'bg-blue-500 hover:bg-blue-600 ring-blue-500'
+            const todayRing = hasAchievement ? 'ring-2 ring-amber-400' : 'ring-2 ring-blue-400'
 
             return (
               <button
@@ -143,11 +153,11 @@ export function ActivityCalendar({ activityDateMap, selectedDate, userId }: Acti
                 onClick={() => hasActivity && handleDateClick(day)}
                 className={`
                   relative h-11 flex flex-col items-center justify-center rounded-lg text-sm transition-colors
-                  ${hasActivity && !isSelected ? 'bg-blue-50 text-blue-700 font-semibold cursor-pointer hover:bg-blue-100 ring-1 ring-blue-200' : ''}
+                  ${hasActivity && !isSelected ? `${highlightBg} ${highlightText} font-semibold cursor-pointer ${highlightHover} ring-1 ${highlightRing}` : ''}
                   ${!hasActivity ? 'cursor-default text-gray-400' : ''}
-                  ${isSelected ? 'bg-blue-500 text-white font-semibold cursor-pointer hover:bg-blue-600 ring-1 ring-blue-500' : ''}
+                  ${isSelected ? `${selectedBg} text-white font-semibold cursor-pointer ring-1` : ''}
                   ${isToday && !isSelected && !hasActivity ? 'font-bold text-gray-700' : ''}
-                  ${isToday && !isSelected && hasActivity ? 'ring-2 ring-blue-400' : ''}
+                  ${isToday && !isSelected && hasActivity ? todayRing : ''}
                   ${dayOfWeek === 0 && !isSelected && !hasActivity ? 'text-red-300' : ''}
                   ${dayOfWeek === 6 && !isSelected && !hasActivity ? 'text-blue-300' : ''}
                 `}

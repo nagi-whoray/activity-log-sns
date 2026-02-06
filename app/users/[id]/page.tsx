@@ -31,19 +31,22 @@ export default async function UserProfilePage({
     notFound()
   }
 
-  // カレンダー用: このユーザーの全投稿日とカテゴリを取得
+  // カレンダー用: このユーザーの全投稿日とカテゴリ、ログタイプを取得
   const { data: activityDateRows } = await supabase
     .from('activity_logs')
-    .select('activity_date, category')
+    .select('activity_date, category, log_type')
     .eq('user_id', params.id)
 
-  const activityDateMap: Record<string, string[]> = {}
+  const activityDateMap: Record<string, { categories: string[], hasAchievement: boolean }> = {}
   for (const r of activityDateRows || []) {
     if (!activityDateMap[r.activity_date]) {
-      activityDateMap[r.activity_date] = []
+      activityDateMap[r.activity_date] = { categories: [], hasAchievement: false }
     }
-    if (!activityDateMap[r.activity_date].includes(r.category)) {
-      activityDateMap[r.activity_date].push(r.category)
+    if (!activityDateMap[r.activity_date].categories.includes(r.category)) {
+      activityDateMap[r.activity_date].categories.push(r.category)
+    }
+    if (r.log_type === 'achievement') {
+      activityDateMap[r.activity_date].hasAchievement = true
     }
   }
 
