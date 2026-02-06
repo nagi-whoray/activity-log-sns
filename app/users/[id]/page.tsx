@@ -4,13 +4,15 @@ import { Header } from '@/components/header'
 import { UserProfileHeader } from '@/components/user-profile-header'
 import { ActivityCalendar } from '@/components/activity-calendar'
 import { ActivityLogList } from '@/components/activity-log-list'
+import { TimelineTabs, TabType } from '@/components/timeline-tabs'
+import { ActivityCategory } from '@/types/database'
 
 export default async function UserProfilePage({
   params,
   searchParams,
 }: {
   params: { id: string }
-  searchParams: { date?: string }
+  searchParams: { date?: string; tab?: string; category?: string }
 }) {
   const supabase = await createClient()
 
@@ -47,6 +49,19 @@ export default async function UserProfilePage({
 
   const selectedDate = searchParams.date || null
 
+  // タブパラメータの解析（マイページではfollowingは使わない）
+  const tabParam = searchParams.tab
+  let activeTab: TabType = 'all'
+  if (tabParam === 'activity') activeTab = 'activity'
+  else if (tabParam === 'achievement') activeTab = 'achievement'
+
+  // カテゴリパラメータの解析
+  const categoryParam = searchParams.category
+  let activeCategory: ActivityCategory | null = null
+  if (categoryParam === 'workout' || categoryParam === 'study' || categoryParam === 'beauty') {
+    activeCategory = categoryParam
+  }
+
   // このユーザーの活動ログを取得
   let activityLogsQuery = supabase
     .from('activity_logs')
@@ -79,6 +94,18 @@ export default async function UserProfilePage({
 
   if (selectedDate) {
     activityLogsQuery = activityLogsQuery.eq('activity_date', selectedDate)
+  }
+
+  // ログタイプでフィルタリング
+  if (activeTab === 'activity') {
+    activityLogsQuery = activityLogsQuery.eq('log_type', 'activity')
+  } else if (activeTab === 'achievement') {
+    activityLogsQuery = activityLogsQuery.eq('log_type', 'achievement')
+  }
+
+  // カテゴリでフィルタリング
+  if (activeCategory) {
+    activityLogsQuery = activityLogsQuery.eq('category', activeCategory)
   }
 
   const { data: activityLogs } = await activityLogsQuery
@@ -132,10 +159,17 @@ export default async function UserProfilePage({
             selectedDate={selectedDate}
             userId={params.id}
           />
+          <TimelineTabs
+            activeTab={activeTab}
+            activeCategory={activeCategory}
+            showFollowingTab={false}
+          />
           <ActivityLogList
             activityLogs={activityLogs || []}
             currentUserId={user?.id || null}
             followingIds={followingIds}
+            activeTab={activeTab}
+            activeCategory={activeCategory}
           />
         </div>
       </main>

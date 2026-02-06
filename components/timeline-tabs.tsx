@@ -8,6 +8,7 @@ export type TabType = 'all' | 'activity' | 'achievement' | 'following'
 interface TimelineTabsProps {
   activeTab: TabType
   activeCategory: ActivityCategory | null
+  showFollowingTab?: boolean
 }
 
 const TABS: { key: TabType; label: string }[] = [
@@ -24,10 +25,12 @@ const CATEGORIES: { value: ActivityCategory | null; label: string; icon: string 
   { value: 'beauty', label: ACTIVITY_CATEGORY_LABELS.beauty, icon: '✨' },
 ]
 
-export function TimelineTabs({ activeTab, activeCategory }: TimelineTabsProps) {
+export function TimelineTabs({ activeTab, activeCategory, showFollowingTab = true }: TimelineTabsProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  const filteredTabs = showFollowingTab ? TABS : TABS.filter(tab => tab.key !== 'following')
 
   const handleTabChange = (tab: TabType) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -59,7 +62,7 @@ export function TimelineTabs({ activeTab, activeCategory }: TimelineTabsProps) {
     <div className="bg-white rounded-lg overflow-hidden">
       {/* 第1段階: ログタイプタブ */}
       <div className="flex border-b border-gray-200">
-        {TABS.map((tab) => (
+        {filteredTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => handleTabChange(tab.key)}
