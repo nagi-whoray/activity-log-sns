@@ -250,14 +250,14 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                           day: 'numeric',
                         })}
                       </p>
-                      <p className="text-xs truncate">
-                        {new Date(log.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
-                        {new Date(log.updated_at) > new Date(log.created_at) && (
-                          <span className="ml-1">
-                            （更新 {new Date(log.updated_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.updated_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}）
-                          </span>
-                        )}
+                      <p className="text-xs">
+                        投稿 {new Date(log.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                       </p>
+                      {new Date(log.updated_at) > new Date(log.created_at) && (
+                        <p className="text-xs">
+                          更新 {new Date(log.updated_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.updated_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

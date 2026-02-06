@@ -602,10 +602,10 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - 既存画像の削除・新規画像の追加
 3. ✅ 投稿一覧への統合
    - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 編集・削除機能統合
-   - 日時表示の改善: 活動日、投稿日時、更新日時を表示
-   - 投稿日時: `yyyy/MM/dd HH:mm` 形式
-   - 更新日時: `（更新 yyyy/MM/dd HH:mm）` 形式で編集済みを明示
-   - `whitespace-nowrap` でモバイルでの改行を防止
+   - 日時表示の改善: 活動日、投稿日時、更新日時を3行で表示
+   - 1行目: 活動日（2026年2月6日）
+   - 2行目: `投稿 yyyy/MM/dd HH:mm`
+   - 3行目: `更新 yyyy/MM/dd HH:mm`（編集済みの場合のみ）
 4. ✅ Storage関数エクスポート
    - [lib/supabase-storage.ts](lib/supabase-storage.ts) - `extractPathFromUrl()`をエクスポート
 5. ✅ 削除時の動作
