@@ -10,6 +10,7 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 - **フロントエンド**: Next.js 14 (App Router), React, TypeScript
 - **スタイリング**: Tailwind CSS + shadcn/ui
 - **画像処理**: react-easy-crop（クロップ）、browser-image-compression（圧縮）
+- **アニメーション**: canvas-confetti（お祝い紙吹雪）
 - **バックエンド**: Supabase (Auth, Database, RLS, Storage)
 - **状態管理**: Server Components + Client Components
 
@@ -31,7 +32,7 @@ components/
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
   ├── activity-log-form.tsx    # [Client] 活動ログ/達成ログ投稿フォーム（ログタイプ選択・画像アップロード対応）
   ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
-  ├── activity-calendar.tsx    # [Client] 投稿カレンダー（月間表示・日付フィルタ対応）
+  ├── activity-calendar.tsx    # [Client] 投稿カレンダー（月間表示・日付フィルタ・達成ログ金色ハイライト対応）
   ├── comment-section.tsx      # [Client] コメント機能
   ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
   ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全部/活動ログ/達成ログ/フォロー中）+ カテゴリフィルタ
@@ -41,7 +42,8 @@ components/
   ├── ImageUpload.tsx          # [Client] 画像アップロードコンポーネント
   ├── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
   ├── post-actions-menu.tsx    # [Client] 投稿編集・削除メニュー（本人のみ表示）
-  └── post-edit-dialog.tsx     # [Client] 投稿編集モーダルダイアログ
+  ├── post-edit-dialog.tsx     # [Client] 投稿編集モーダルダイアログ
+  └── achievement-celebration-modal.tsx  # [Client] 達成ログ投稿時のお祝いモーダル（confetti）
 
 lib/
   ├── supabase/
@@ -657,6 +659,32 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - 達成ログの視覚的区別（🏆バッジ、金色グラデーション背景）
    - タブ・カテゴリ別の空状態メッセージ
 
+### マイページフィルター・カレンダー金色ハイライト追加 (2026-02-06)
+1. ✅ マイページ2段階フィルタリング
+   - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - タブ・カテゴリフィルタ追加
+   - [components/timeline-tabs.tsx](components/timeline-tabs.tsx) - `showFollowingTab` props追加
+   - マイページ: 3タブ（全部 / 活動ログ / 達成ログ）※フォロー中なし
+   - メインページ: 4タブ（従来通り）
+2. ✅ カレンダー達成ログ金色ハイライト
+   - [components/activity-calendar.tsx](components/activity-calendar.tsx) - 型定義・スタイル変更
+   - `activityDateMap` 型: `Record<string, { categories: string[], hasAchievement: boolean }>`
+   - 達成ログがある日: 金色ハイライト（`bg-amber-50`, `ring-amber-200`）
+   - 活動ログのみの日: 青色ハイライト（従来通り）
+
+### 達成ログ投稿時お祝いモーダル追加 (2026-02-06)
+1. ✅ パッケージインストール
+   - `canvas-confetti` - 紙吹雪アニメーションライブラリ
+   - `@types/canvas-confetti` - 型定義
+2. ✅ お祝いモーダルコンポーネント作成
+   - [components/achievement-celebration-modal.tsx](components/achievement-celebration-modal.tsx)
+   - 「🏆 達成おめでとう！」モーダル表示
+   - 金色の紙吹雪が左右から2秒間降るアニメーション
+   - 🎉絵文字のバウンスアニメーション
+3. ✅ 投稿フォーム統合
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - モーダル表示ロジック追加
+   - 達成ログ投稿成功時のみモーダル表示
+   - 活動ログ投稿時は従来通り即時リフレッシュ
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -763,4 +791,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-06
-**更新内容**: 達成ログ機能・2段階タイムラインフィルタリング追加
+**更新内容**: マイページフィルター・カレンダー金色ハイライト・達成ログお祝いモーダル追加
