@@ -23,6 +23,9 @@ const CATEGORIES: { value: ActivityCategory | null; label: string; icon: string 
   { value: 'workout', label: ACTIVITY_CATEGORY_LABELS.workout, icon: '💪' },
   { value: 'study', label: ACTIVITY_CATEGORY_LABELS.study, icon: '📚' },
   { value: 'beauty', label: ACTIVITY_CATEGORY_LABELS.beauty, icon: '✨' },
+  { value: 'meal', label: ACTIVITY_CATEGORY_LABELS.meal, icon: '🍽️' },
+  { value: 'work', label: ACTIVITY_CATEGORY_LABELS.work, icon: '💼' },
+  { value: 'dev', label: ACTIVITY_CATEGORY_LABELS.dev, icon: '💻' },
 ]
 
 export function TimelineTabs({ activeTab, activeCategory, showFollowingTab = true }: TimelineTabsProps) {

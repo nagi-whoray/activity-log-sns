@@ -6,6 +6,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   workout: '筋トレ',
   study: '勉強',
   beauty: '美容',
+  meal: '食事',
+  work: '仕事',
+  dev: '開発',
 }
 
 // 連続活動日数を計算

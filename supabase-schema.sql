@@ -15,9 +15,9 @@
 -- ENUM型の作成
 -- ============================================
 
--- カテゴリタイプ（筋トレ/勉強/美容）
+-- カテゴリタイプ（筋トレ/勉強/美容/食事/仕事/開発）
 DO $$ BEGIN
-  CREATE TYPE activity_category AS ENUM ('workout', 'study', 'beauty');
+  CREATE TYPE activity_category AS ENUM ('workout', 'study', 'beauty', 'meal', 'work', 'dev');
 EXCEPTION
   WHEN duplicate_object THEN null;
 END $$;

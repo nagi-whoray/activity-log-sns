@@ -78,6 +78,9 @@ const CATEGORY_STYLES: Record<ActivityCategory, { bg: string; text: string; icon
   workout: { bg: 'bg-orange-100', text: 'text-orange-700', icon: '💪' },
   study: { bg: 'bg-blue-100', text: 'text-blue-700', icon: '📚' },
   beauty: { bg: 'bg-pink-100', text: 'text-pink-700', icon: '✨' },
+  meal: { bg: 'bg-green-100', text: 'text-green-700', icon: '🍽️' },
+  work: { bg: 'bg-purple-100', text: 'text-purple-700', icon: '💼' },
+  dev: { bg: 'bg-teal-100', text: 'text-teal-700', icon: '💻' },
 }
 
 function LikeButton({

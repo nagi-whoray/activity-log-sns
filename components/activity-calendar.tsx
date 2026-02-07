@@ -18,12 +18,18 @@ const CATEGORY_COLORS: Record<string, string> = {
   workout: 'bg-orange-400',
   study: 'bg-blue-400',
   beauty: 'bg-pink-400',
+  meal: 'bg-green-400',
+  work: 'bg-purple-400',
+  dev: 'bg-teal-400',
 }
 
 const CATEGORY_COLORS_LIGHT: Record<string, string> = {
   workout: 'bg-white/70',
   study: 'bg-white/70',
   beauty: 'bg-white/70',
+  meal: 'bg-white/70',
+  work: 'bg-white/70',
+  dev: 'bg-white/70',
 }
 
 function getDaysInMonth(year: number, month: number): number {

@@ -154,11 +154,14 @@ CHECK(follower_id != following_id) -- 自分自身をフォロー不可
 ```
 
 #### カテゴリ（ENUM型）
-| 値 | 日本語 | アイコン |
-|---|--------|---------|
-| `workout` | 筋トレ | 💪 |
-| `study` | 勉強 | 📚 |
-| `beauty` | 美容 | ✨ |
+| 値 | 日本語 | アイコン | 色 |
+|---|--------|---------|-----|
+| `workout` | 筋トレ | 💪 | オレンジ |
+| `study` | 勉強 | 📚 | ブルー |
+| `beauty` | 美容 | ✨ | ピンク |
+| `meal` | 食事 | 🍽️ | グリーン |
+| `work` | 仕事 | 💼 | パープル |
+| `dev` | 開発 | 💻 | ティール |
 
 #### RLS (Row Level Security)
 - **profiles**: 全員が閲覧可能、本人のみ更新可能
@@ -901,7 +904,25 @@ gh pr create --title "機能追加" --body "説明"
 - [Supabase Table Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/editor)
 - [Supabase SQL Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/sql)
 
+### カテゴリ追加: 食事・仕事・開発 (2026-02-07)
+1. ✅ 新カテゴリ追加
+   - 🍽️ 食事 (`meal`) - 緑系
+   - 💼 仕事 (`work`) - 紫系
+   - 💻 開発 (`dev`) - ティール系
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `ActivityCategory`型、`ACTIVITY_CATEGORY_LABELS`
+3. ✅ DBマイグレーション
+   - `supabase/migrations/20260207075734_add_category_meal_work_dev.sql`
+   - ENUM型に3つの値を追加
+4. ✅ UIコンポーネント更新
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - 投稿フォーム
+   - [components/post-edit-dialog.tsx](components/post-edit-dialog.tsx) - 編集ダイアログ
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 投稿表示スタイル
+   - [components/activity-calendar.tsx](components/activity-calendar.tsx) - カレンダー色
+   - [components/timeline-tabs.tsx](components/timeline-tabs.tsx) - フィルタータブ
+   - [app/api/generate-message/route.ts](app/api/generate-message/route.ts) - AIメッセージ生成
+
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: 投稿後モーダルの絵文字をランダム化（毎回違う絵文字が表示される）
+**更新内容**: カテゴリ追加（食事・仕事・開発）

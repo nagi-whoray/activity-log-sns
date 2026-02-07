@@ -7,13 +7,16 @@ export type Json =
   | Json[]
 
 // 活動カテゴリの型
-export type ActivityCategory = 'workout' | 'study' | 'beauty'
+export type ActivityCategory = 'workout' | 'study' | 'beauty' | 'meal' | 'work' | 'dev'
 
 // カテゴリの日本語ラベル
 export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
   workout: '筋トレ',
   study: '勉強',
   beauty: '美容',
+  meal: '食事',
+  work: '仕事',
+  dev: '開発',
 }
 
 // ログタイプの型（活動ログ/達成ログ）
