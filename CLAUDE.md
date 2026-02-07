@@ -1080,6 +1080,17 @@ gh pr create --title "機能追加" --body "説明"
 7. ✅ API更新
    - [app/api/activity-logs/route.ts](app/api/activity-logs/route.ts) - ルーティン情報をJOIN
 
+### 活動時間表示機能追加 (2026-02-08)
+1. ✅ 投稿カードに活動時間を表示
+   - [components/activity-log-card.tsx](components/activity-log-card.tsx) - 活動時間表示追加
+   - 活動日の隣に「⏱️ X時間Y分」形式で表示
+   - 活動時間が未入力（null）の投稿では非表示
+2. ✅ 型定義更新
+   - `ActivityLogData`インターフェースに`activity_duration_minutes`フィールド追加
+3. ✅ フォーマット関数
+   - `formatDuration(minutes)` - 分を「X時間Y分」形式に変換
+   - 例: 90分 → 「1時間30分」、60分 → 「1時間」、30分 → 「30分」
+
 ### ルーティン開始日/終了日・過去アイテム折りたたみ機能追加 (2026-02-08)
 1. ✅ データベース拡張
    - `user_routines`テーブルに`started_at`、`ended_at`カラム追加
@@ -1106,4 +1117,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-08
-**更新内容**: ルーティン開始日/終了日機能追加、過去アイテム/ルーティンの折りたたみセクション追加
+**更新内容**: 投稿カードに活動時間表示機能追加（⏱️ X時間Y分形式）

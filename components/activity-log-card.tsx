@@ -29,6 +29,7 @@ export interface ActivityLogData {
   title: string
   content: string
   activity_date: string
+  activity_duration_minutes: number | null
   created_at: string
   updated_at: string
   user_id: string
@@ -76,6 +77,18 @@ interface ActivityLogCardProps {
   isFollowing: boolean
   onLikeUpdate?: (logId: string, isLiked: boolean) => void
   onDelete?: (logId: string) => void
+}
+
+function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0 && mins > 0) {
+    return `${hours}時間${mins}分`
+  } else if (hours > 0) {
+    return `${hours}時間`
+  } else {
+    return `${mins}分`
+  }
 }
 
 const CATEGORY_STYLES: Record<ActivityCategory, { bg: string; text: string; icon: string }> = {
@@ -321,6 +334,9 @@ function ActivityLogCardInner({
                       month: 'long',
                       day: 'numeric',
                     })}
+                    {log.activity_duration_minutes && (
+                      <span className="ml-2">⏱️ {formatDuration(log.activity_duration_minutes)}</span>
+                    )}
                   </p>
                   <p className="text-xs">
                     投稿 {new Date(log.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
