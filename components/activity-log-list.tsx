@@ -341,6 +341,18 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                         isFollowing={followingIds.includes(log.user_id)}
                       />
                     </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      {isAchievement && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200">
+                          🏆 達成
+                        </span>
+                      )}
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${categoryStyle.bg} ${categoryStyle.text}`}
+                      >
+                        {categoryStyle.icon} {ACTIVITY_CATEGORY_LABELS[log.category]}
+                      </span>
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       <p>
                         {new Date(log.activity_date).toLocaleDateString('ja-JP', {
@@ -360,24 +372,14 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {isAchievement && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200">
-                      🏆 達成
-                    </span>
-                  )}
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${categoryStyle.bg} ${categoryStyle.text}`}
-                  >
-                    {categoryStyle.icon} {ACTIVITY_CATEGORY_LABELS[log.category]}
-                  </span>
-                  {log.user_id === currentUserId && (
+                {log.user_id === currentUserId && (
+                  <div className="shrink-0">
                     <PostActionsMenu
                       onEdit={() => setEditingPost(log)}
                       onDelete={() => handleDeletePost(log)}
                     />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
