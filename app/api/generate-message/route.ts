@@ -43,7 +43,7 @@ function calculateStreak(dates: string[]): number {
 
 export async function POST(request: Request) {
   try {
-    const { logType, category, content, userId, logId } = await request.json()
+    const { logType, category, content, userId, logId, activityDurationMinutes } = await request.json()
 
     const supabase = await createClient()
 
@@ -126,7 +126,7 @@ ${userProfileContext}${userContext}
 【今回の記録】
 カテゴリ: ${categoryLabel}
 内容: ${content}
-タイプ: ${logType === 'achievement' ? '達成ログ' : '活動ログ'}
+タイプ: ${logType === 'achievement' ? '達成ログ' : '活動ログ'}${activityDurationMinutes ? `\n活動時間: ${activityDurationMinutes}分` : ''}
 
 【確定した統計（サーバー計算済み）】
 - 連続活動日数: ${streak}日

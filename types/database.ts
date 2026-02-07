@@ -83,6 +83,7 @@ export interface Database {
           title: string
           content: string
           activity_date: string
+          activity_duration_minutes: number | null
           image_url: string | null
           is_image_private: boolean
           log_type: LogType
@@ -97,6 +98,7 @@ export interface Database {
           title: string
           content: string
           activity_date?: string
+          activity_duration_minutes?: number | null
           image_url?: string | null
           is_image_private?: boolean
           log_type?: LogType
@@ -111,6 +113,7 @@ export interface Database {
           title?: string
           content?: string
           activity_date?: string
+          activity_duration_minutes?: number | null
           image_url?: string | null
           is_image_private?: boolean
           log_type?: LogType
@@ -237,6 +240,7 @@ export interface Database {
           title: string
           content: string
           activity_date: string
+          activity_duration_minutes: number | null
           image_url: string | null
           is_image_private: boolean
           log_type: LogType

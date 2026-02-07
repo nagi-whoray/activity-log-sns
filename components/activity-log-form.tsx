@@ -34,6 +34,7 @@ export function ActivityLogForm() {
   const [activityDate, setActivityDate] = useState(
     toLocalDateString(new Date())
   )
+  const [activityDurationMinutes, setActivityDurationMinutes] = useState<string>('')
   const [images, setImages] = useState<ImagePreview[]>([])
   const [isImagePrivate, setIsImagePrivate] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -105,12 +106,15 @@ export function ActivityLogForm() {
         imageUrls = uploadResults.map((result) => result.url)
       }
 
+      const durationMinutes = activityDurationMinutes ? parseInt(activityDurationMinutes, 10) : null
+
       const { data: insertedLog, error } = await supabase.from('activity_logs').insert({
         user_id: user.id,
         category,
         title: '',
         content: content.trim(),
         activity_date: activityDate,
+        activity_duration_minutes: logType === 'activity' ? durationMinutes : null,
         image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         is_image_private: imageUrls.length > 0 ? isImagePrivate : false,
         log_type: logType,
@@ -123,6 +127,7 @@ export function ActivityLogForm() {
 
       setContent('')
       setActivityDate(toLocalDateString(new Date()))
+      setActivityDurationMinutes('')
       setImages([])
       setIsImagePrivate(false)
 
@@ -140,7 +145,8 @@ export function ActivityLogForm() {
             category,
             content: content.trim(),
             userId: user.id,
-            logId: insertedLog?.id
+            logId: insertedLog?.id,
+            activityDurationMinutes: logType === 'activity' ? durationMinutes : null
           })
         })
         const data = await res.json()
@@ -242,6 +248,27 @@ export function ActivityLogForm() {
               <option value={toLocalDateString(new Date(Date.now() - 86400000))}>昨日（{toLocalDateString(new Date(Date.now() - 86400000)).replace(/-/g, '/')}）</option>
             </select>
           </div>
+
+          {/* 活動時間（活動ログの場合のみ） */}
+          {logType === 'activity' && (
+            <div className="space-y-2">
+              <Label htmlFor="activityDuration">活動時間（任意）</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  id="activityDuration"
+                  value={activityDurationMinutes}
+                  onChange={(e) => setActivityDurationMinutes(e.target.value)}
+                  placeholder="例: 30"
+                  min="1"
+                  max="1440"
+                  disabled={loading}
+                  className="w-24 h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                />
+                <span className="text-sm text-muted-foreground">分</span>
+              </div>
+            </div>
+          )}
 
           {/* 内容 */}
           <div className="space-y-2">

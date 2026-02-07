@@ -103,18 +103,19 @@ updated_at    TIMESTAMP
 
 #### テーブル: activity_logs（活動ログ/達成ログ）
 ```sql
-id               UUID PRIMARY KEY
-user_id          UUID (profiles参照)
-category         activity_category NOT NULL  -- 'workout' | 'study' | 'beauty'
-title            TEXT NOT NULL
-content          TEXT NOT NULL
-activity_date    DATE DEFAULT CURRENT_DATE
-image_url        TEXT
-is_image_private BOOLEAN DEFAULT FALSE  -- 画像の公開/非公開設定
-log_type         TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
-ai_message       TEXT          -- AIが生成した励ましメッセージ（重複防止用に保存）
-created_at       TIMESTAMP
-updated_at       TIMESTAMP
+id                        UUID PRIMARY KEY
+user_id                   UUID (profiles参照)
+category                  activity_category NOT NULL  -- 'workout' | 'study' | 'beauty'
+title                     TEXT NOT NULL
+content                   TEXT NOT NULL
+activity_date             DATE DEFAULT CURRENT_DATE
+activity_duration_minutes INTEGER          -- 活動時間（分単位）。任意入力。活動ログの場合のみ使用
+image_url                 TEXT
+is_image_private          BOOLEAN DEFAULT FALSE  -- 画像の公開/非公開設定
+log_type                  TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
+ai_message                TEXT          -- AIが生成した励ましメッセージ（重複防止用に保存）
+created_at                TIMESTAMP
+updated_at                TIMESTAMP
 ```
 
 #### ログタイプ
@@ -922,7 +923,21 @@ gh pr create --title "機能追加" --body "説明"
    - [components/timeline-tabs.tsx](components/timeline-tabs.tsx) - フィルタータブ
    - [app/api/generate-message/route.ts](app/api/generate-message/route.ts) - AIメッセージ生成
 
+### 活動時間入力機能追加 (2026-02-07)
+1. ✅ データベース拡張
+   - `activity_logs`テーブルに`activity_duration_minutes`カラム追加（INTEGER、NULL許容）
+   - マイグレーション: `supabase/migrations/20260207173250_add_activity_duration_minutes.sql`
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `activity_duration_minutes`フィールド追加
+3. ✅ 投稿フォーム拡張
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - 活動時間入力フィールド追加
+   - 活動ログの場合のみ表示（達成ログでは非表示）
+   - 活動日の下に配置、入力は任意
+4. ✅ AIメッセージ生成連携
+   - [app/api/generate-message/route.ts](app/api/generate-message/route.ts) - 活動時間をプロンプトに含める
+   - 例: 「活動時間: 30分」
+
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: カテゴリ追加（食事・仕事・開発）
+**更新内容**: 活動時間入力機能追加
