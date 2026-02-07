@@ -13,6 +13,42 @@ export interface OgpData {
 }
 
 /**
+ * HTMLエンティティをデコード
+ * &#12354; (10進数) や &#x3042; (16進数) 形式をデコード
+ */
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+}
+
+/**
+ * OGPテキストをデコード（HTMLエンティティ + URLエンコード）
+ * デコードに失敗した場合は元の文字列を返す
+ */
+function decodeOgpText(str: string | null): string | null {
+  if (!str) return null
+  try {
+    // 1. HTMLエンティティをデコード
+    let decoded = decodeHtmlEntities(str)
+    // 2. URLエンコードをデコード（失敗時はスキップ）
+    try {
+      decoded = decodeURIComponent(decoded)
+    } catch {
+      // URLデコード失敗時はそのまま
+    }
+    return decoded
+  } catch {
+    return str
+  }
+}
+
+/**
  * HTMLからOGPメタデータをパース
  */
 function parseOgpFromHtml(html: string, baseUrl: string): Partial<OgpData> {
@@ -23,7 +59,7 @@ function parseOgpFromHtml(html: string, baseUrl: string): Partial<OgpData> {
     html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']*)["']/i) ||
     html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*property=["']og:title["']/i) ||
     html.match(/<title[^>]*>([^<]*)<\/title>/i)
-  result.title = titleMatch?.[1]?.trim() || null
+  result.title = decodeOgpText(titleMatch?.[1]?.trim() || null)
 
   // og:description または description
   const descMatch =
@@ -31,7 +67,7 @@ function parseOgpFromHtml(html: string, baseUrl: string): Partial<OgpData> {
     html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*property=["']og:description["']/i) ||
     html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i) ||
     html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i)
-  result.description = descMatch?.[1]?.trim() || null
+  result.description = decodeOgpText(descMatch?.[1]?.trim() || null)
 
   // og:image
   const imageMatch =
@@ -50,7 +86,7 @@ function parseOgpFromHtml(html: string, baseUrl: string): Partial<OgpData> {
     /<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']*)["']/i
   )
   try {
-    result.siteName = siteNameMatch?.[1]?.trim() || new URL(baseUrl).hostname
+    result.siteName = decodeOgpText(siteNameMatch?.[1]?.trim() || null) || new URL(baseUrl).hostname
   } catch {
     result.siteName = null
   }
@@ -127,9 +163,11 @@ export async function POST(request: Request) {
         signal: controller.signal,
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (compatible; ActivityLogSNS/1.0; +https://activity-log-sns.vercel.app)',
-          Accept: 'text/html,application/xhtml+xml',
-          'Accept-Language': 'ja,en;q=0.9',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
         },
       })
 

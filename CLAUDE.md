@@ -811,9 +811,21 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
 3. ✅ OGPキャッシュテーブル
    - `ogp_cache`テーブル追加（URL、タイトル、説明、画像URL、有効期限管理）
    - マイグレーション: `supabase/migrations/20260207160000_add_ogp_cache_table.sql`
+   - DELETEポリシー追加: `supabase/migrations/20260207190000_fix_ogp_cache_delete_policy.sql`
 4. ✅ 投稿・コメントへの統合
    - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 投稿内容にOGPプレビュー表示
    - [components/comment-section.tsx](components/comment-section.tsx) - コメント内容にOGPプレビュー表示
+5. ✅ OGPテキストデコード機能
+   - HTMLエンティティ（`&#12354;` や `&#x3042;`）を通常の文字にデコード
+   - URLエンコード（`%E3%81%82`）も対応
+   - `decodeHtmlEntities()` + `decodeOgpText()` 関数で実装
+6. ✅ OGPキャッシュ管理スクリプト
+   - [scripts/delete-ogp-cache.ts](scripts/delete-ogp-cache.ts) - キャッシュ削除
+   - [scripts/list-ogp-cache.ts](scripts/list-ogp-cache.ts) - キャッシュ一覧表示
+   - 実行: `npx tsx scripts/delete-ogp-cache.ts "パターン"`
+7. ⚠️ 制限事項
+   - Cloudflare保護のあるサイト（iHerbなど）はOGPプレビューが表示されない
+   - サーバーサイドからのフェッチがブロックされるため、フォールバックリンク表示になる
 
 ### いいねユーザー一覧表示機能 (2026-02-07)
 1. ✅ データ取得拡張
