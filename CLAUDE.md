@@ -24,7 +24,8 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 ```
 app/
   ├── api/
-  │   └── generate-message/  # Claude APIを使ったメッセージ生成エンドポイント
+  │   ├── generate-message/  # Claude APIを使ったメッセージ生成エンドポイント
+  │   └── generate-name/     # Claude APIを使ったユーモアある名前生成エンドポイント
   ├── auth/callback/      # Supabase認証後のコールバック処理
   ├── login/              # 未認証ユーザー向けログインページ
   ├── profile/edit/       # プロフィール編集ページ
@@ -89,10 +90,13 @@ types/
 id            UUID PRIMARY KEY (auth.users参照)
 email         TEXT NOT NULL
 username      TEXT NOT NULL
-display_name  TEXT
+display_name  TEXT          -- 未設定時はAIが自動生成
 avatar_url    TEXT
 bio           TEXT
 background_url TEXT
+goal          TEXT          -- 今の目標（マイページに表示）
+ai_prompt     TEXT          -- AIに覚えてほしいこと
+ai_tone       TEXT          -- AIの口調・スタイル
 created_at    TIMESTAMP
 updated_at    TIMESTAMP
 ```
@@ -107,6 +111,7 @@ content       TEXT NOT NULL
 activity_date DATE DEFAULT CURRENT_DATE
 image_url     TEXT
 log_type      TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
+ai_message    TEXT          -- AIが生成した励ましメッセージ（重複防止用に保存）
 created_at    TIMESTAMP
 updated_at    TIMESTAMP
 ```
@@ -695,6 +700,28 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - `ANTHROPIC_API_KEY` - Claude API認証キー（.env.local、サーバーサイド専用）
    - 本番環境: Vercel Environment Variablesに設定が必要
 
+### AIパーソナライゼーション機能追加 (2026-02-07)
+1. ✅ ユーザー別AI設定
+   - `profiles`テーブルに`ai_prompt`（AIに覚えてほしいこと）、`ai_tone`（口調・スタイル）カラム追加
+   - マイグレーション: `supabase/migrations/20260207032732_add_ai_settings_to_profiles.sql`
+   - [components/profile-edit-form.tsx](components/profile-edit-form.tsx) - 設定UI追加
+2. ✅ 目標フィールド追加
+   - `profiles`テーブルに`goal`カラム追加
+   - マイグレーション: `supabase/migrations/20260207033957_add_goal_to_profiles.sql`
+   - [components/user-profile-header.tsx](components/user-profile-header.tsx) - 🎯目標表示
+3. ✅ @ユーザーID表示の削除
+   - プライバシー対策（メールアドレスが推測可能なため）
+   - [components/user-profile-header.tsx](components/user-profile-header.tsx) からusername表示を削除
+4. ✅ AI自動名前生成
+   - [app/api/generate-name/route.ts](app/api/generate-name/route.ts) - 名前生成エンドポイント
+   - display_name未設定時、プロフィール作成時にAIがユーモアある名前を自動生成
+   - 例: 「がんばる山田」「継続の達人」「朝活マスター」
+5. ✅ AIメッセージ保存・重複防止
+   - `activity_logs`テーブルに`ai_message`カラム追加
+   - マイグレーション: `supabase/migrations/20260207130416_add_ai_message_to_activity_logs.sql`
+   - 生成されたメッセージをログに保存、次回生成時に参照して重複を防ぐ
+   - プロンプトに「過去のメッセージと同じ表現を繰り返さない」指示を追加
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -800,5 +827,5 @@ gh pr create --title "機能追加" --body "説明"
 
 ---
 
-**最終更新**: 2026-02-06
-**更新内容**: Claude APIによる動的メッセージ生成機能追加
+**最終更新**: 2026-02-07
+**更新内容**: AIパーソナライゼーション機能追加（ユーザー別AI設定、目標フィールド、AI自動名前生成、メッセージ重複防止）
