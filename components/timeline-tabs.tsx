@@ -81,7 +81,7 @@ export function TimelineTabs({ activeTab, activeCategory, showFollowingTab = tru
       </div>
 
       {/* 第2段階: カテゴリフィルタ */}
-      <div className="flex gap-2 p-3 bg-gray-50">
+      <div className="flex flex-wrap gap-2 p-3 bg-gray-50">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.value ?? 'all'}
