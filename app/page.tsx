@@ -18,13 +18,14 @@ export default async function Home({
     data: { user },
   } = await supabase.auth.getUser()
 
-  // ログインユーザーのルーティンを取得
+  // ログインユーザーのアクティブなルーティンを取得（活動ログ入力フォーム用）
   let userRoutines: UserRoutine[] = []
   if (user) {
     const { data: routines } = await supabase
       .from('user_routines')
       .select('*')
       .eq('user_id', user.id)
+      .is('ended_at', null)
       .order('created_at', { ascending: false })
 
     userRoutines = routines || []

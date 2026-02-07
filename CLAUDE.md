@@ -192,6 +192,8 @@ title             TEXT NOT NULL          -- タイトル（例: 「朝のラン�
 category          activity_category NOT NULL  -- カテゴリ
 duration_minutes  INTEGER                -- 所要時間（分）
 content           TEXT                   -- 内容（URLリンク化対象）
+started_at        TIMESTAMP DEFAULT NOW()  -- 開始日（自動設定、編集不可）
+ended_at          TIMESTAMP              -- 終了日（NULL=実施中、設定後は編集不可）
 created_at        TIMESTAMP
 updated_at        TIMESTAMP
 ```
@@ -203,6 +205,10 @@ updated_at        TIMESTAMP
 - 投稿フォームでルーティンを選択すると、カテゴリ・所要時間・内容が自動入力される
 - ルーティンを使った投稿には「🔄 ルーティン名」ラベルが表示される（indigo色）
 - URLが含まれる場合はOGPプレビューを自動表示
+- 登録時に「開始日」が自動設定（編集不可）
+- 「終了」で終了日を記録（一度設定すると変更不可）
+- 終了したルーティンは投稿フォームで選択不可
+- 実施中ルーティンが優先表示、終了済みは「過去のルーティン」折りたたみ内に表示
 
 #### カテゴリ（ENUM型）
 | 値 | 日本語 | アイコン | 色 |
@@ -1074,7 +1080,30 @@ gh pr create --title "機能追加" --body "説明"
 7. ✅ API更新
    - [app/api/activity-logs/route.ts](app/api/activity-logs/route.ts) - ルーティン情報をJOIN
 
+### ルーティン開始日/終了日・過去アイテム折りたたみ機能追加 (2026-02-08)
+1. ✅ データベース拡張
+   - `user_routines`テーブルに`started_at`、`ended_at`カラム追加
+   - マイグレーション: `supabase/migrations/20260208000000_add_routine_dates.sql`
+   - 既存ルーティンの`started_at`は`created_at`の値で初期化
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `started_at`, `ended_at`フィールド追加
+3. ✅ ルーティンカード機能拡張
+   - [components/user-routine-card.tsx](components/user-routine-card.tsx) - 「終了」ボタン追加
+   - 終了済みルーティンはグレー背景で表示
+   - 日付表示: 実施中=緑色「実施中（開始日〜）」、終了=グレー「開始日〜終了日」
+4. ✅ 過去のルーティン折りたたみ
+   - [components/user-routines-section.tsx](components/user-routines-section.tsx)
+   - 実施中ルーティンのみメイン表示
+   - 終了済みは「過去のルーティン」セクションに折りたたみ（デフォルト非表示）
+5. ✅ 過去のアイテム折りたたみ
+   - [components/user-items-section.tsx](components/user-items-section.tsx)
+   - 利用中アイテムのみメイン表示
+   - 停止済みは「過去のアイテム」セクションに折りたたみ（デフォルト非表示）
+6. ✅ 活動ログフォーム更新
+   - [app/page.tsx](app/page.tsx) - 終了したルーティンは選択肢に表示しない
+   - `.is('ended_at', null)`でフィルタリング
+
 ---
 
-**最終更新**: 2026-02-07
-**更新内容**: ルーティン機能追加、カテゴリ「筋トレ」→「運動」に変更
+**最終更新**: 2026-02-08
+**更新内容**: ルーティン開始日/終了日機能追加、過去アイテム/ルーティンの折りたたみセクション追加

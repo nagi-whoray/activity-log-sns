@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, History } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { UserRoutineCard } from '@/components/user-routine-card'
@@ -16,10 +16,19 @@ interface UserRoutinesSectionProps {
 
 export function UserRoutinesSection({ routines, isOwnProfile, userId }: UserRoutinesSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isPastExpanded, setIsPastExpanded] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
 
-  const sortedRoutines = [...routines].sort((a, b) => {
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  // アクティブと過去のルーティンを分離
+  const activeRoutines = routines.filter(r => !r.ended_at)
+  const pastRoutines = routines.filter(r => r.ended_at)
+
+  // ソート: アクティブは開始日順、過去は終了日順
+  const sortedActiveRoutines = [...activeRoutines].sort((a, b) => {
+    return new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+  })
+  const sortedPastRoutines = [...pastRoutines].sort((a, b) => {
+    return new Date(b.ended_at!).getTime() - new Date(a.ended_at!).getTime()
   })
 
   return (
@@ -32,7 +41,7 @@ export function UserRoutinesSection({ routines, isOwnProfile, userId }: UserRout
           <CardTitle className="flex items-center gap-2 text-base">
             ルーティン
             <span className="text-sm font-normal text-muted-foreground">
-              ({routines.length}件)
+              ({activeRoutines.length}件実施中)
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -60,7 +69,8 @@ export function UserRoutinesSection({ routines, isOwnProfile, userId }: UserRout
 
       {isExpanded && (
         <CardContent className="pt-0">
-          {sortedRoutines.length === 0 ? (
+          {/* アクティブなルーティン */}
+          {sortedActiveRoutines.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               {isOwnProfile
                 ? 'ルーティンを追加してみましょう'
@@ -68,7 +78,7 @@ export function UserRoutinesSection({ routines, isOwnProfile, userId }: UserRout
             </p>
           ) : (
             <div className="space-y-3">
-              {sortedRoutines.map((routine) => (
+              {sortedActiveRoutines.map((routine) => (
                 <UserRoutineCard
                   key={routine.id}
                   routine={routine}
@@ -76,6 +86,37 @@ export function UserRoutinesSection({ routines, isOwnProfile, userId }: UserRout
                   userId={userId}
                 />
               ))}
+            </div>
+          )}
+
+          {/* 過去のルーティン（折りたたみ） */}
+          {pastRoutines.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <button
+                onClick={() => setIsPastExpanded(!isPastExpanded)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              >
+                <History className="w-4 h-4" />
+                <span>過去のルーティン（{pastRoutines.length}件）</span>
+                {isPastExpanded ? (
+                  <ChevronUp className="w-4 h-4 ml-auto" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 ml-auto" />
+                )}
+              </button>
+
+              {isPastExpanded && (
+                <div className="mt-3 space-y-3">
+                  {sortedPastRoutines.map((routine) => (
+                    <UserRoutineCard
+                      key={routine.id}
+                      routine={routine}
+                      isOwnProfile={isOwnProfile}
+                      userId={userId}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </CardContent>

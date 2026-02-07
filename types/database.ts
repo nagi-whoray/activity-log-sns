@@ -275,6 +275,8 @@ export interface Database {
           category: ActivityCategory
           duration_minutes: number | null
           content: string | null
+          started_at: string
+          ended_at: string | null
           created_at: string
           updated_at: string
         }
@@ -285,6 +287,8 @@ export interface Database {
           category: ActivityCategory
           duration_minutes?: number | null
           content?: string | null
+          started_at?: string
+          ended_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -295,6 +299,7 @@ export interface Database {
           category?: ActivityCategory
           duration_minutes?: number | null
           content?: string | null
+          ended_at?: string | null
           created_at?: string
           updated_at?: string
         }

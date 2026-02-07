@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreHorizontal, Pencil, Trash2, Clock } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2, Clock, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { UserRoutineFormDialog } from '@/components/user-routine-form-dialog'
@@ -25,6 +25,15 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string; icon: string }
   dev: { bg: 'bg-teal-100', text: 'text-teal-700', icon: '💻' },
 }
 
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
+
 export function UserRoutineCard({ routine, isOwnProfile, userId }: UserRoutineCardProps) {
   const [showMenu, setShowMenu] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -33,6 +42,28 @@ export function UserRoutineCard({ routine, isOwnProfile, userId }: UserRoutineCa
   const supabase = createClient()
 
   const categoryStyle = CATEGORY_STYLES[routine.category] || CATEGORY_STYLES.workout
+  const isActive = !routine.ended_at
+
+  const handleStop = async () => {
+    if (!confirm('このルーティンを終了しますか？\n終了後は元に戻せません。')) return
+
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('user_routines')
+        .update({ ended_at: new Date().toISOString() })
+        .eq('id', routine.id)
+
+      if (error) throw error
+      router.refresh()
+    } catch (error) {
+      console.error('Stop error:', error)
+      alert('終了に失敗しました')
+    } finally {
+      setLoading(false)
+      setShowMenu(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!confirm('このルーティンを削除しますか？')) return
@@ -53,7 +84,7 @@ export function UserRoutineCard({ routine, isOwnProfile, userId }: UserRoutineCa
   }
 
   return (
-    <div className="p-3 rounded-lg border bg-white">
+    <div className={`p-3 rounded-lg border ${isActive ? 'bg-white' : 'bg-gray-50'}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -68,6 +99,18 @@ export function UserRoutineCard({ routine, isOwnProfile, userId }: UserRoutineCa
               </span>
             )}
           </div>
+
+          <p className="text-xs text-muted-foreground mt-1">
+            {isActive ? (
+              <span className="text-green-600">
+                実施中（{formatDate(routine.started_at)}〜）
+              </span>
+            ) : (
+              <span className="text-gray-500">
+                {formatDate(routine.started_at)} 〜 {formatDate(routine.ended_at!)}
+              </span>
+            )}
+          </p>
 
           {routine.content && (
             <div className="mt-2">
@@ -107,6 +150,15 @@ export function UserRoutineCard({ routine, isOwnProfile, userId }: UserRoutineCa
                   >
                     <Pencil className="w-4 h-4" /> 編集
                   </button>
+                  {isActive && (
+                    <button
+                      onClick={handleStop}
+                      disabled={loading}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 text-orange-600"
+                    >
+                      <Square className="w-4 h-4" /> 終了
+                    </button>
+                  )}
                   <button
                     onClick={handleDelete}
                     disabled={loading}
