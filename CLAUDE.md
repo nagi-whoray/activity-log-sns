@@ -772,6 +772,13 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - 数字クリック → いいねしたユーザー一覧ダイアログ表示
    - ダイアログ内でユーザーをクリック → プロフィールページに遷移
 
+### 更新日時表示の修正 (2026-02-07)
+1. ✅ 問題修正
+   - AIメッセージ保存時の`update`で`updated_at`が更新されてしまう問題を修正
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 更新日時表示の条件を変更
+   - `updated_at`と`created_at`の差が10秒以内の場合は「更新」表示をスキップ
+   - これによりAIメッセージ自動保存では「更新」が表示されず、ユーザー編集時のみ表示
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -878,4 +885,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: URLリンク化・OGPプレビュー機能、いいねユーザー一覧表示機能を追加
+**更新内容**: 更新日時表示の修正（AIメッセージ保存による誤表示を防止）
