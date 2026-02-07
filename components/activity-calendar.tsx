@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -10,6 +10,14 @@ interface ActivityCalendarProps {
   activityDateMap: Record<string, { categories: string[], hasAchievement: boolean }>
   selectedDate: string | null
   userId: string
+}
+
+// 12ヶ月前の年月を計算
+function getOneYearAgoDate(): { year: number; month: number } {
+  const now = new Date()
+  const oneYearAgo = new Date(now)
+  oneYearAgo.setFullYear(now.getFullYear() - 1)
+  return { year: oneYearAgo.getFullYear(), month: oneYearAgo.getMonth() }
 }
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
@@ -46,26 +54,67 @@ function formatDateString(year: number, month: number, day: number): string {
   return `${year}-${m}-${d}`
 }
 
-export function ActivityCalendar({ activityDateMap, selectedDate, userId }: ActivityCalendarProps) {
+export function ActivityCalendar({ activityDateMap: initialDateMap, selectedDate, userId }: ActivityCalendarProps) {
   const router = useRouter()
 
   const initialDate = selectedDate ? new Date(selectedDate) : new Date()
   const [currentYear, setCurrentYear] = useState(initialDate.getFullYear())
   const [currentMonth, setCurrentMonth] = useState(initialDate.getMonth())
+  const [dateMap, setDateMap] = useState(initialDateMap)
+  const [hasLoadedFullData, setHasLoadedFullData] = useState(false)
+  const [isLoadingFullData, setIsLoadingFullData] = useState(false)
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth)
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth)
 
   const today = new Date()
   const todayString = formatDateString(today.getFullYear(), today.getMonth(), today.getDate())
+  const oneYearAgo = getOneYearAgoDate()
+
+  // 12ヶ月より前かどうかをチェック
+  const isBeforeOneYearAgo = useCallback((year: number, month: number) => {
+    if (year < oneYearAgo.year) return true
+    if (year === oneYearAgo.year && month < oneYearAgo.month) return true
+    return false
+  }, [oneYearAgo.year, oneYearAgo.month])
+
+  // 全期間のデータを取得
+  const loadFullData = useCallback(async () => {
+    if (hasLoadedFullData || isLoadingFullData) return
+
+    setIsLoadingFullData(true)
+    try {
+      const response = await fetch(`/api/calendar-data?userId=${userId}`)
+      const data = await response.json()
+      if (data.activityDateMap) {
+        setDateMap(data.activityDateMap)
+        setHasLoadedFullData(true)
+      }
+    } catch (error) {
+      console.error('Failed to load full calendar data:', error)
+    } finally {
+      setIsLoadingFullData(false)
+    }
+  }, [userId, hasLoadedFullData, isLoadingFullData])
 
   const handlePrevMonth = () => {
+    let newYear = currentYear
+    let newMonth = currentMonth
+
     if (currentMonth === 0) {
-      setCurrentYear((y) => y - 1)
-      setCurrentMonth(11)
+      newYear = currentYear - 1
+      newMonth = 11
     } else {
-      setCurrentMonth((m) => m - 1)
+      newMonth = currentMonth - 1
     }
+
+    // 12ヶ月より前に移動する場合、全データを取得
+    if (!hasLoadedFullData && isBeforeOneYearAgo(newYear, newMonth)) {
+      loadFullData()
+    }
+
+    setCurrentYear(newYear)
+    setCurrentMonth(newMonth)
   }
 
   const handleNextMonth = () => {
@@ -107,9 +156,14 @@ export function ActivityCalendar({ activityDateMap, selectedDate, userId }: Acti
           <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="h-8 w-8 p-0">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-semibold">
-            {currentYear}年{currentMonth + 1}月
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">
+              {currentYear}年{currentMonth + 1}月
+            </span>
+            {isLoadingFullData && (
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            )}
+          </div>
           <Button variant="ghost" size="sm" onClick={handleNextMonth} className="h-8 w-8 p-0">
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -137,7 +191,7 @@ export function ActivityCalendar({ activityDateMap, selectedDate, userId }: Acti
             }
 
             const dateString = formatDateString(currentYear, currentMonth, day)
-            const dateData = activityDateMap[dateString] || { categories: [], hasAchievement: false }
+            const dateData = dateMap[dateString] || { categories: [], hasAchievement: false }
             const categories = dateData.categories
             const hasAchievement = dateData.hasAchievement
             const hasActivity = categories.length > 0

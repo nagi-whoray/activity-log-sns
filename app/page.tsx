@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
-import { ActivityLogList } from '@/components/activity-log-list'
+import { ActivityLogListClient } from '@/components/activity-log-list-client'
 import { ActivityLogForm } from '@/components/activity-log-form'
 import { Header } from '@/components/header'
 import { TimelineTabs, TabType } from '@/components/timeline-tabs'
 import { ActivityCategory } from '@/types/database'
+
+const PAGE_SIZE = 20
 
 export default async function Home({
   searchParams,
@@ -92,7 +94,7 @@ export default async function Home({
         )
       `)
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(PAGE_SIZE + 1)
 
     // ログタイプでフィルタリング
     if (activeTab === 'following') {
@@ -113,6 +115,13 @@ export default async function Home({
     activityLogs = data
   }
 
+  // ページネーション用の処理
+  const hasMore = (activityLogs?.length || 0) > PAGE_SIZE
+  const resultLogs = hasMore ? activityLogs?.slice(0, PAGE_SIZE) : activityLogs
+  const nextCursor = hasMore && resultLogs && resultLogs.length > 0
+    ? resultLogs[resultLogs.length - 1].created_at
+    : null
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header user={user} profileName={profileName} />
@@ -121,12 +130,16 @@ export default async function Home({
         <div className="space-y-6">
           <ActivityLogForm />
           <TimelineTabs activeTab={activeTab} activeCategory={activeCategory} />
-          <ActivityLogList
-            activityLogs={activityLogs || []}
+          <ActivityLogListClient
+            initialLogs={resultLogs || []}
+            initialCursor={nextCursor}
+            initialHasMore={hasMore}
+            filters={{
+              tab: activeTab,
+              category: activeCategory,
+            }}
             currentUserId={user?.id || null}
             followingIds={followingIds}
-            activeTab={activeTab}
-            activeCategory={activeCategory}
           />
         </div>
       </main>

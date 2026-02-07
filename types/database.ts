@@ -338,3 +338,17 @@ export type ActivityLogWithAll = ActivityLog & {
 export type CommentWithProfile = Comment & {
   profiles: Profile
 }
+
+// ページネーション用の型
+export interface PaginatedResponse<T> {
+  logs: T[]
+  nextCursor: string | null
+  hasMore: boolean
+}
+
+export interface ActivityLogFilters {
+  tab: 'all' | 'following' | 'activity' | 'achievement'
+  category: ActivityCategory | null
+  userId?: string
+  date?: string
+}

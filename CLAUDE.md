@@ -362,9 +362,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
    - `comments`テーブル追加
    - コメント投稿・削除機能
 
-6. **無限スクロール**
-   - React Intersection Observer使用
-   - ページネーション実装
+6. ~~**無限スクロール**~~ ✅ 実装済み
+   - Intersection Observer使用
+   - カーソルベースページネーション
+   - パフォーマンス最適化（React.memo、楽観的更新）
 
 ### 優先度: 低
 7. **リアルタイム更新**
@@ -984,7 +985,33 @@ gh pr create --title "機能追加" --body "説明"
    - 利用中アイテムが優先表示、停止済みは下に表示
    - 折りたたみ式でデフォルトは閉じた状態
 
+### 無限スクロール・パフォーマンス最適化 (2026-02-07)
+1. ✅ ページネーションAPI作成
+   - [app/api/activity-logs/route.ts](app/api/activity-logs/route.ts) - カーソルベースのページネーションAPI
+   - タブ（all/following/activity/achievement）とカテゴリのフィルタリング対応
+   - ユーザーID・日付によるフィルタリング対応（プロフィールページ用）
+2. ✅ 無限スクロールコンポーネント作成
+   - [components/activity-log-list-client.tsx](components/activity-log-list-client.tsx) - Intersection Observer使用
+   - 画面下部到達時に自動で追加読み込み
+   - ローディングインジケータ・終端メッセージ表示
+3. ✅ ActivityLogCardのメモ化
+   - [components/activity-log-card.tsx](components/activity-log-card.tsx) - React.memoでパフォーマンス最適化
+   - カスタム比較関数でlikes/comments変更時のみ再レンダリング
+4. ✅ 楽観的更新の実装
+   - いいねボタンで`router.refresh()`を削除
+   - ローカルステートのみ更新でUI即時反映
+5. ✅ カレンダーデータの最適化
+   - 初回読み込みは過去12ヶ月分のみ取得
+   - [app/api/calendar-data/route.ts](app/api/calendar-data/route.ts) - 全期間データ取得API
+   - 12ヶ月より前の月に移動時、全期間データを動的取得
+6. ✅ 型定義追加
+   - [types/database.ts](types/database.ts) - `PaginatedResponse`, `ActivityLogFilters`型追加
+7. ✅ ページ修正
+   - [app/page.tsx](app/page.tsx) - 無限スクロール対応
+   - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - 無限スクロール + カレンダー最適化
+8. ✅ 1ページあたり件数: 20件（PAGE_SIZE定数）
+
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: マイアイテム機能追加
+**更新内容**: 無限スクロール・パフォーマンス最適化

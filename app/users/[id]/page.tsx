@@ -4,9 +4,11 @@ import { Header } from '@/components/header'
 import { UserProfileHeader } from '@/components/user-profile-header'
 import { UserItemsSection } from '@/components/user-items-section'
 import { ActivityCalendar } from '@/components/activity-calendar'
-import { ActivityLogList } from '@/components/activity-log-list'
+import { ActivityLogListClient } from '@/components/activity-log-list-client'
 import { TimelineTabs, TabType } from '@/components/timeline-tabs'
 import { ActivityCategory } from '@/types/database'
+
+const PAGE_SIZE = 20
 
 export default async function UserProfilePage({
   params,
@@ -32,11 +34,16 @@ export default async function UserProfilePage({
     notFound()
   }
 
-  // カレンダー用: このユーザーの全投稿日とカテゴリ、ログタイプを取得
+  // カレンダー用: このユーザーの過去12ヶ月の投稿日とカテゴリ、ログタイプを取得
+  const oneYearAgo = new Date()
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0]
+
   const { data: activityDateRows } = await supabase
     .from('activity_logs')
     .select('activity_date, category, log_type')
     .eq('user_id', params.id)
+    .gte('activity_date', oneYearAgoStr)
 
   const activityDateMap: Record<string, { categories: string[], hasAchievement: boolean }> = {}
   for (const r of activityDateRows || []) {
@@ -79,7 +86,13 @@ export default async function UserProfilePage({
       ),
       likes (
         id,
-        user_id
+        user_id,
+        profiles (
+          id,
+          username,
+          display_name,
+          avatar_url
+        )
       ),
       comments (
         id,
@@ -114,7 +127,14 @@ export default async function UserProfilePage({
 
   const { data: activityLogs } = await activityLogsQuery
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(PAGE_SIZE + 1)
+
+  // ページネーション用の処理
+  const hasMore = (activityLogs?.length || 0) > PAGE_SIZE
+  const resultLogs = hasMore ? activityLogs?.slice(0, PAGE_SIZE) : activityLogs
+  const nextCursor = hasMore && resultLogs && resultLogs.length > 0
+    ? resultLogs[resultLogs.length - 1].created_at
+    : null
 
   // フォロワー数を取得
   const { count: followerCount } = await supabase
@@ -181,12 +201,18 @@ export default async function UserProfilePage({
             activeCategory={activeCategory}
             showFollowingTab={false}
           />
-          <ActivityLogList
-            activityLogs={activityLogs || []}
+          <ActivityLogListClient
+            initialLogs={resultLogs || []}
+            initialCursor={nextCursor}
+            initialHasMore={hasMore}
+            filters={{
+              tab: activeTab,
+              category: activeCategory,
+              userId: params.id,
+              date: selectedDate || undefined,
+            }}
             currentUserId={user?.id || null}
             followingIds={followingIds}
-            activeTab={activeTab}
-            activeCategory={activeCategory}
           />
         </div>
       </main>
