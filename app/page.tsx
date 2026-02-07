@@ -70,7 +70,13 @@ export default async function Home({
         ),
         likes (
           id,
-          user_id
+          user_id,
+          profiles (
+            id,
+            username,
+            display_name,
+            avatar_url
+          )
         ),
         comments (
           id,

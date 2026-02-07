@@ -185,6 +185,45 @@ export interface Database {
           created_at?: string
         }
       }
+      ogp_cache: {
+        Row: {
+          id: string
+          url: string
+          title: string | null
+          description: string | null
+          image_url: string | null
+          site_name: string | null
+          favicon_url: string | null
+          fetched_at: string
+          expires_at: string
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          url: string
+          title?: string | null
+          description?: string | null
+          image_url?: string | null
+          site_name?: string | null
+          favicon_url?: string | null
+          fetched_at?: string
+          expires_at?: string
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          url?: string
+          title?: string | null
+          description?: string | null
+          image_url?: string | null
+          site_name?: string | null
+          favicon_url?: string | null
+          fetched_at?: string
+          expires_at?: string
+          error_message?: string | null
+        }
+      }
     }
     Views: {
       activity_logs_with_counts: {
@@ -233,6 +272,10 @@ export type CommentUpdate = Database['public']['Tables']['comments']['Update']
 
 export type Follow = Database['public']['Tables']['follows']['Row']
 export type FollowInsert = Database['public']['Tables']['follows']['Insert']
+
+export type OgpCache = Database['public']['Tables']['ogp_cache']['Row']
+export type OgpCacheInsert = Database['public']['Tables']['ogp_cache']['Insert']
+export type OgpCacheUpdate = Database['public']['Tables']['ogp_cache']['Update']
 
 export type ActivityLogWithCounts = Database['public']['Views']['activity_logs_with_counts']['Row']
 

@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { LinkifiedText } from '@/components/LinkifiedText'
+import { OgpPreviewList } from '@/components/OgpPreviewList'
 
 interface Comment {
   id: string
@@ -123,8 +126,20 @@ export function CommentSection({
                 key={comment.id}
                 className="flex gap-2 p-2 rounded-lg bg-gray-50"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                  {displayName[0]?.toUpperCase() || 'U'}
+                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                  {comment.profiles?.avatar_url ? (
+                    <Image
+                      src={comment.profiles.avatar_url}
+                      alt={displayName}
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center text-white text-sm font-semibold">
+                      {displayName[0]?.toUpperCase() || 'U'}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -147,8 +162,9 @@ export function CommentSection({
                     )}
                   </div>
                   <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {comment.content}
+                    <LinkifiedText text={comment.content} />
                   </p>
+                  <OgpPreviewList content={comment.content} maxPreviews={1} />
                 </div>
               </div>
             )

@@ -6,11 +6,19 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType } from '@/types/database'
 import { TabType } from '@/components/timeline-tabs'
 import { CommentSection } from '@/components/comment-section'
 import { ActivityImages } from '@/components/ActivityImages'
+import { LinkifiedText } from '@/components/LinkifiedText'
+import { OgpPreviewList } from '@/components/OgpPreviewList'
 import { FollowButton } from '@/components/follow-button'
 import { PostActionsMenu } from '@/components/post-actions-menu'
 import { PostEditDialog } from '@/components/post-edit-dialog'
@@ -34,7 +42,16 @@ interface ActivityLog {
     display_name: string | null
     avatar_url: string | null
   } | null
-  likes: { id: string; user_id: string }[]
+  likes: {
+    id: string
+    user_id: string
+    profiles: {
+      id: string
+      username: string
+      display_name: string | null
+      avatar_url: string | null
+    } | null
+  }[]
   comments: {
     id: string
     content: string
@@ -69,7 +86,16 @@ function LikeButton({
   currentUserId,
 }: {
   activityLogId: string
-  likes: { id: string; user_id: string }[]
+  likes: {
+    id: string
+    user_id: string
+    profiles: {
+      id: string
+      username: string
+      display_name: string | null
+      avatar_url: string | null
+    } | null
+  }[]
   currentUserId: string | null
 }) {
   const [isLiked, setIsLiked] = useState(
@@ -77,6 +103,7 @@ function LikeButton({
   )
   const [likesCount, setLikesCount] = useState(likes.length)
   const [loading, setLoading] = useState(false)
+  const [showLikesDialog, setShowLikesDialog] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -123,16 +150,67 @@ function LikeButton({
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleLike}
-      disabled={loading}
-      className={`gap-1 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-gray-600'}`}
-    >
-      <span>{isLiked ? '❤️' : '🤍'}</span>
-      <span>{likesCount}</span>
-    </Button>
+    <>
+      <div className={`inline-flex items-center gap-1 ${isLiked ? 'text-red-500' : 'text-gray-500'}`}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLike}
+          disabled={loading}
+          className={`px-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-gray-600'}`}
+        >
+          <span>{isLiked ? '❤️' : '🤍'}</span>
+        </Button>
+        {likesCount > 0 ? (
+          <button
+            onClick={() => setShowLikesDialog(true)}
+            className="text-sm hover:underline cursor-pointer"
+          >
+            {likesCount}
+          </button>
+        ) : (
+          <span className="text-sm">{likesCount}</span>
+        )}
+      </div>
+
+      <Dialog open={showLikesDialog} onOpenChange={setShowLikesDialog}>
+        <DialogContent className="max-w-sm max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>いいねしたユーザー</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {likes.map((like) => {
+              const displayName = like.profiles?.display_name || like.profiles?.username || 'Unknown User'
+              return (
+                <Link
+                  key={like.id}
+                  href={`/users/${like.user_id}`}
+                  onClick={() => setShowLikesDialog(false)}
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                    {like.profiles?.avatar_url ? (
+                      <Image
+                        src={like.profiles.avatar_url}
+                        alt={displayName}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                        {displayName[0]?.toUpperCase() || 'U'}
+                      </div>
+                    )}
+                  </div>
+                  <span className="font-medium">{displayName}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -303,7 +381,10 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="whitespace-pre-wrap text-gray-700">{log.content}</p>
+              <p className="whitespace-pre-wrap text-gray-700">
+                <LinkifiedText text={log.content} />
+              </p>
+              <OgpPreviewList content={log.content} maxPreviews={3} />
 
               {/* 画像表示 */}
               <ActivityImages

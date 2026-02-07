@@ -743,6 +743,35 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
 5. ✅ 型定義更新
    - [types/database.ts](types/database.ts) - `is_image_private`フィールド追加
 
+### URLリンク化・OGPプレビュー機能 (2026-02-07)
+1. ✅ URLリンク化コンポーネント
+   - [components/LinkifiedText.tsx](components/LinkifiedText.tsx) - 投稿内のURLを自動リンク化
+   - [lib/url-utils.ts](lib/url-utils.ts) - URL抽出ユーティリティ
+2. ✅ OGPプレビューコンポーネント
+   - [components/OgpPreviewCard.tsx](components/OgpPreviewCard.tsx) - OGPカード表示
+   - [components/OgpPreviewList.tsx](components/OgpPreviewList.tsx) - 複数URL対応のリスト
+   - [app/api/og-preview/route.ts](app/api/og-preview/route.ts) - OGPメタデータ取得API
+3. ✅ OGPキャッシュテーブル
+   - `ogp_cache`テーブル追加（URL、タイトル、説明、画像URL、有効期限管理）
+   - マイグレーション: `supabase/migrations/20260207160000_add_ogp_cache_table.sql`
+4. ✅ 投稿・コメントへの統合
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - 投稿内容にOGPプレビュー表示
+   - [components/comment-section.tsx](components/comment-section.tsx) - コメント内容にOGPプレビュー表示
+
+### いいねユーザー一覧表示機能 (2026-02-07)
+1. ✅ データ取得拡張
+   - [app/page.tsx](app/page.tsx) - likesクエリにプロフィール情報を追加
+   - 取得データ: `id`, `user_id`, `profiles { id, username, display_name, avatar_url }`
+2. ✅ いいねユーザー一覧ダイアログ
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - LikeButton拡張
+   - いいね数（数字部分）をクリックでダイアログを開く
+   - ユーザーのアバター・表示名・プロフィールへのリンクを表示
+   - いいねが0件の場合はクリック不可
+3. ✅ UI詳細
+   - ハートアイコンクリック → いいね/いいね解除（従来通り）
+   - 数字クリック → いいねしたユーザー一覧ダイアログ表示
+   - ダイアログ内でユーザーをクリック → プロフィールページに遷移
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -849,4 +878,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: 画像公開/非公開機能追加（投稿画像を非公開に設定可能、他のユーザーには非公開の画像があることだけ表示）
+**更新内容**: URLリンク化・OGPプレビュー機能、いいねユーザー一覧表示機能を追加
