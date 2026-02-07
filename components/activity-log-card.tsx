@@ -35,6 +35,11 @@ export interface ActivityLogData {
   image_url: string | null
   is_image_private: boolean
   log_type: LogType
+  routine_id: string | null
+  routine: {
+    id: string
+    title: string
+  } | null
   profiles: {
     id: string
     username: string
@@ -292,10 +297,15 @@ function ActivityLogCardInner({
                     isFollowing={isFollowing}
                   />
                 </div>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {isAchievement && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200">
                       🏆 達成
+                    </span>
+                  )}
+                  {log.routine && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-indigo-100 text-indigo-700 border border-indigo-200">
+                      🔄 {log.routine.title}
                     </span>
                   )}
                   <span

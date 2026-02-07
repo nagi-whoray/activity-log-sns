@@ -6,10 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType, LOG_TYPE_LABELS } from '@/types/database'
+import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType, LOG_TYPE_LABELS, UserRoutine } from '@/types/database'
 import { ImageUpload, ImagePreview } from '@/components/ImageUpload'
 import { uploadMultipleImages } from '@/lib/supabase-storage'
 import { EncouragementModal } from '@/components/encouragement-modal'
+import { RoutineSelector } from '@/components/routine-selector'
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear()
@@ -27,10 +28,15 @@ const CATEGORIES: { value: ActivityCategory; label: string; icon: string }[] = [
   { value: 'dev', label: ACTIVITY_CATEGORY_LABELS.dev, icon: '💻' },
 ]
 
-export function ActivityLogForm() {
+interface ActivityLogFormProps {
+  userRoutines?: UserRoutine[]
+}
+
+export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
   const [logType, setLogType] = useState<LogType>('activity')
   const [category, setCategory] = useState<ActivityCategory>('workout')
   const [content, setContent] = useState('')
+  const [selectedRoutine, setSelectedRoutine] = useState<UserRoutine | null>(null)
   const [activityDate, setActivityDate] = useState(
     toLocalDateString(new Date())
   )
@@ -46,6 +52,19 @@ export function ActivityLogForm() {
   const supabase = createClient()
 
   const isCompressing = images.some((img) => img.isCompressing)
+
+  const handleRoutineSelect = (routine: UserRoutine | null) => {
+    setSelectedRoutine(routine)
+    if (routine) {
+      setCategory(routine.category)
+      if (routine.duration_minutes) {
+        setActivityDurationMinutes(String(routine.duration_minutes))
+      }
+      if (routine.content) {
+        setContent(routine.content)
+      }
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,6 +137,7 @@ export function ActivityLogForm() {
         image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         is_image_private: imageUrls.length > 0 ? isImagePrivate : false,
         log_type: logType,
+        routine_id: selectedRoutine?.id || null,
       }).select('id').single()
 
       if (error) throw error
@@ -130,6 +150,7 @@ export function ActivityLogForm() {
       setActivityDurationMinutes('')
       setImages([])
       setIsImagePrivate(false)
+      setSelectedRoutine(null)
 
       // モーダルを表示してメッセージを生成
       setSubmittedLogType(logType)
@@ -211,6 +232,19 @@ export function ActivityLogForm() {
               </button>
             </div>
           </div>
+
+          {/* ルーティン選択（活動ログで、ルーティンがある場合のみ） */}
+          {logType === 'activity' && userRoutines.length > 0 && (
+            <div className="space-y-2">
+              <Label>ルーティン（任意）</Label>
+              <RoutineSelector
+                routines={userRoutines}
+                selectedRoutineId={selectedRoutine?.id || null}
+                onSelect={handleRoutineSelect}
+                disabled={loading}
+              />
+            </div>
+          )}
 
           {/* カテゴリ選択 */}
           <div className="space-y-2">

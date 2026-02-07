@@ -3,7 +3,7 @@ import { ActivityLogListClient } from '@/components/activity-log-list-client'
 import { ActivityLogForm } from '@/components/activity-log-form'
 import { Header } from '@/components/header'
 import { TimelineTabs, TabType } from '@/components/timeline-tabs'
-import { ActivityCategory } from '@/types/database'
+import { ActivityCategory, UserRoutine } from '@/types/database'
 
 const PAGE_SIZE = 20
 
@@ -17,6 +17,18 @@ export default async function Home({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  // ログインユーザーのルーティンを取得
+  let userRoutines: UserRoutine[] = []
+  if (user) {
+    const { data: routines } = await supabase
+      .from('user_routines')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    userRoutines = routines || []
+  }
 
   // タブパラメータの解析
   const tabParam = searchParams.tab
@@ -91,6 +103,10 @@ export default async function Home({
             display_name,
             avatar_url
           )
+        ),
+        routine:user_routines (
+          id,
+          title
         )
       `)
       .order('created_at', { ascending: false })
@@ -128,7 +144,7 @@ export default async function Home({
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
         <div className="space-y-6">
-          <ActivityLogForm />
+          <ActivityLogForm userRoutines={userRoutines} />
           <TimelineTabs activeTab={activeTab} activeCategory={activeCategory} />
           <ActivityLogListClient
             initialLogs={resultLogs || []}

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { UserProfileHeader } from '@/components/user-profile-header'
 import { UserItemsSection } from '@/components/user-items-section'
+import { UserRoutinesSection } from '@/components/user-routines-section'
 import { ActivityCalendar } from '@/components/activity-calendar'
 import { ActivityLogListClient } from '@/components/activity-log-list-client'
 import { TimelineTabs, TabType } from '@/components/timeline-tabs'
@@ -105,6 +106,10 @@ export default async function UserProfilePage({
           display_name,
           avatar_url
         )
+      ),
+      routine:user_routines (
+        id,
+        title
       )
     `)
     .eq('user_id', params.id)
@@ -171,6 +176,13 @@ export default async function UserProfilePage({
     .order('ended_at', { ascending: true, nullsFirst: true })
     .order('started_at', { ascending: false })
 
+  // ユーザールーティンを取得
+  const { data: userRoutines } = await supabase
+    .from('user_routines')
+    .select('*')
+    .eq('user_id', params.id)
+    .order('created_at', { ascending: false })
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header user={user} profileName={isOwnProfile ? (profile.display_name || profile.username) : undefined} />
@@ -188,6 +200,11 @@ export default async function UserProfilePage({
           />
           <UserItemsSection
             items={userItems || []}
+            isOwnProfile={isOwnProfile}
+            userId={params.id}
+          />
+          <UserRoutinesSection
+            routines={userRoutines || []}
             isOwnProfile={isOwnProfile}
             userId={params.id}
           />

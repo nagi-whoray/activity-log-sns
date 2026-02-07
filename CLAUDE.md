@@ -52,7 +52,11 @@ components/
   ├── encouragement-modal.tsx  # [Client] 投稿時の激励/祝福モーダル（Claude API生成メッセージ、達成時confetti）
   ├── user-items-section.tsx   # [Client] マイアイテム折りたたみセクション
   ├── user-item-card.tsx       # [Client] アイテムカード（OGPプレビュー付き）
-  └── user-item-form-dialog.tsx # [Client] アイテム追加・編集ダイアログ
+  ├── user-item-form-dialog.tsx # [Client] アイテム追加・編集ダイアログ
+  ├── user-routines-section.tsx # [Client] ルーティン折りたたみセクション
+  ├── user-routine-card.tsx    # [Client] ルーティンカード（OGPプレビュー付き）
+  ├── user-routine-form-dialog.tsx # [Client] ルーティン追加・編集ダイアログ
+  └── routine-selector.tsx     # [Client] 投稿フォーム用ルーティン選択UI
 
 lib/
   ├── supabase/
@@ -116,6 +120,7 @@ activity_duration_minutes INTEGER          -- 活動時間（分単位）。任�
 image_url                 TEXT
 is_image_private          BOOLEAN DEFAULT FALSE  -- 画像の公開/非公開設定
 log_type                  TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
+routine_id                UUID (user_routines参照) -- 使用したルーティン（任意）
 ai_message                TEXT          -- AIが生成した励ましメッセージ（重複防止用に保存）
 created_at                TIMESTAMP
 updated_at                TIMESTAMP
@@ -179,10 +184,30 @@ updated_at    TIMESTAMP
 - 商品URLがある場合はOGPプレビューを自動表示
 - 利用中アイテムが優先表示、停止済みアイテムは下に表示
 
+#### テーブル: user_routines（ルーティン）
+```sql
+id                UUID PRIMARY KEY
+user_id           UUID (profiles参照) NOT NULL
+title             TEXT NOT NULL          -- タイトル（例: 「朝のランニング」）
+category          activity_category NOT NULL  -- カテゴリ
+duration_minutes  INTEGER                -- 所要時間（分）
+content           TEXT                   -- 内容（URLリンク化対象）
+created_at        TIMESTAMP
+updated_at        TIMESTAMP
+```
+
+**RLS**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+
+**機能**:
+- マイページに折りたたみ式セクションとして表示
+- 投稿フォームでルーティンを選択すると、カテゴリ・所要時間・内容が自動入力される
+- ルーティンを使った投稿には「🔄 ルーティン名」ラベルが表示される（indigo色）
+- URLが含まれる場合はOGPプレビューを自動表示
+
 #### カテゴリ（ENUM型）
 | 値 | 日本語 | アイコン | 色 |
 |---|--------|---------|-----|
-| `workout` | 筋トレ | 💪 | オレンジ |
+| `workout` | 運動 | 💪 | オレンジ |
 | `study` | 勉強 | 📚 | ブルー |
 | `beauty` | 美容 | ✨ | ピンク |
 | `meal` | 食事 | 🍽️ | グリーン |
@@ -196,6 +221,7 @@ updated_at    TIMESTAMP
 - **comments**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ更新/削除可能
 - **follows**: 全員が閲覧可能、本人のみフォロー作成/削除可能
 - **user_items**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+- **user_routines**: 全員が閲覧可能、本人のみ作成/更新/削除可能
 
 #### トリガー
 - `handle_new_user()`: 新規ユーザー登録時に自動でprofilesテーブルにレコード作成
@@ -1011,7 +1037,32 @@ gh pr create --title "機能追加" --body "説明"
    - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - 無限スクロール + カレンダー最適化
 8. ✅ 1ページあたり件数: 20件（PAGE_SIZE定数）
 
+### ルーティン機能追加 (2026-02-07)
+1. ✅ データベース拡張
+   - `user_routines`テーブル追加（タイトル、カテゴリ、所要時間、内容）
+   - `activity_logs`テーブルに`routine_id`カラム追加
+   - マイグレーション: `supabase/migrations/20260207210000_add_user_routines_table.sql`
+   - RLSポリシー: 全員閲覧可、本人のみ作成/更新/削除可
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `UserRoutine`, `UserRoutineInsert`, `UserRoutineUpdate`型追加
+   - `ActivityLogWithAll`型に`routine`フィールド追加
+3. ✅ コンポーネント作成
+   - [components/user-routines-section.tsx](components/user-routines-section.tsx) - 折りたたみ式セクション
+   - [components/user-routine-card.tsx](components/user-routine-card.tsx) - ルーティンカード（OGPプレビュー付き）
+   - [components/user-routine-form-dialog.tsx](components/user-routine-form-dialog.tsx) - 追加・編集ダイアログ
+   - [components/routine-selector.tsx](components/routine-selector.tsx) - 投稿フォーム用選択UI
+4. ✅ 投稿フォーム統合
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - ルーティン選択機能追加
+   - ルーティン選択時にカテゴリ・所要時間・内容を自動入力（常に上書き）
+5. ✅ 投稿表示更新
+   - [components/activity-log-card.tsx](components/activity-log-card.tsx) - ルーティンラベル表示（🔄アイコン、indigo色）
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - ルーティンラベル表示
+6. ✅ マイページ統合
+   - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - ルーティンセクション追加
+7. ✅ API更新
+   - [app/api/activity-logs/route.ts](app/api/activity-logs/route.ts) - ルーティン情報をJOIN
+
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: 無限スクロール・パフォーマンス最適化
+**更新内容**: ルーティン機能追加、カテゴリ「筋トレ」→「運動」に変更

@@ -71,6 +71,10 @@ export async function GET(request: NextRequest) {
           display_name,
           avatar_url
         )
+      ),
+      routine:user_routines (
+        id,
+        title
       )
     `)
     .order('created_at', { ascending: false })

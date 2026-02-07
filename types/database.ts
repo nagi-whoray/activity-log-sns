@@ -11,7 +11,7 @@ export type ActivityCategory = 'workout' | 'study' | 'beauty' | 'meal' | 'work' 
 
 // カテゴリの日本語ラベル
 export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
-  workout: '筋トレ',
+  workout: '運動',
   study: '勉強',
   beauty: '美容',
   meal: '食事',
@@ -88,6 +88,7 @@ export interface Database {
           is_image_private: boolean
           log_type: LogType
           ai_message: string | null
+          routine_id: string | null
           created_at: string
           updated_at: string
         }
@@ -103,6 +104,7 @@ export interface Database {
           is_image_private?: boolean
           log_type?: LogType
           ai_message?: string | null
+          routine_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -118,6 +120,7 @@ export interface Database {
           is_image_private?: boolean
           log_type?: LogType
           ai_message?: string | null
+          routine_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -264,6 +267,38 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_routines: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          category: ActivityCategory
+          duration_minutes: number | null
+          content: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          category: ActivityCategory
+          duration_minutes?: number | null
+          content?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          category?: ActivityCategory
+          duration_minutes?: number | null
+          content?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       activity_logs_with_counts: {
@@ -322,6 +357,10 @@ export type UserItem = Database['public']['Tables']['user_items']['Row']
 export type UserItemInsert = Database['public']['Tables']['user_items']['Insert']
 export type UserItemUpdate = Database['public']['Tables']['user_items']['Update']
 
+export type UserRoutine = Database['public']['Tables']['user_routines']['Row']
+export type UserRoutineInsert = Database['public']['Tables']['user_routines']['Insert']
+export type UserRoutineUpdate = Database['public']['Tables']['user_routines']['Update']
+
 export type ActivityLogWithCounts = Database['public']['Views']['activity_logs_with_counts']['Row']
 
 // JOINを含む型
@@ -333,6 +372,7 @@ export type ActivityLogWithAll = ActivityLog & {
   profiles: Profile
   likes: Like[]
   comments: (Comment & { profiles: Profile })[]
+  routine: { id: string; title: string } | null
 }
 
 export type CommentWithProfile = Comment & {
