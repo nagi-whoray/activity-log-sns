@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header'
 import { UserProfileHeader } from '@/components/user-profile-header'
+import { UserItemsSection } from '@/components/user-items-section'
 import { ActivityCalendar } from '@/components/activity-calendar'
 import { ActivityLogList } from '@/components/activity-log-list'
 import { TimelineTabs, TabType } from '@/components/timeline-tabs'
@@ -142,6 +143,14 @@ export default async function UserProfilePage({
 
   const isOwnProfile = user?.id === params.id
 
+  // ユーザーアイテムを取得
+  const { data: userItems } = await supabase
+    .from('user_items')
+    .select('*')
+    .eq('user_id', params.id)
+    .order('ended_at', { ascending: true, nullsFirst: true })
+    .order('started_at', { ascending: false })
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header user={user} profileName={isOwnProfile ? (profile.display_name || profile.username) : undefined} />
@@ -156,6 +165,11 @@ export default async function UserProfilePage({
             isOwnProfile={isOwnProfile}
             currentUserId={user?.id || null}
             isFollowing={isFollowing}
+          />
+          <UserItemsSection
+            items={userItems || []}
+            isOwnProfile={isOwnProfile}
+            userId={params.id}
           />
           <ActivityCalendar
             activityDateMap={activityDateMap}

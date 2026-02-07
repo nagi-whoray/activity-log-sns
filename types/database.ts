@@ -230,6 +230,40 @@ export interface Database {
           error_message?: string | null
         }
       }
+      user_items: {
+        Row: {
+          id: string
+          user_id: string
+          product_name: string
+          product_url: string | null
+          usage_method: string | null
+          started_at: string
+          ended_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          product_name: string
+          product_url?: string | null
+          usage_method?: string | null
+          started_at?: string
+          ended_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          product_name?: string
+          product_url?: string | null
+          usage_method?: string | null
+          ended_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       activity_logs_with_counts: {
@@ -283,6 +317,10 @@ export type FollowInsert = Database['public']['Tables']['follows']['Insert']
 export type OgpCache = Database['public']['Tables']['ogp_cache']['Row']
 export type OgpCacheInsert = Database['public']['Tables']['ogp_cache']['Insert']
 export type OgpCacheUpdate = Database['public']['Tables']['ogp_cache']['Update']
+
+export type UserItem = Database['public']['Tables']['user_items']['Row']
+export type UserItemInsert = Database['public']['Tables']['user_items']['Insert']
+export type UserItemUpdate = Database['public']['Tables']['user_items']['Update']
 
 export type ActivityLogWithCounts = Database['public']['Views']['activity_logs_with_counts']['Row']
 

@@ -49,7 +49,10 @@ components/
   ├── ActivityImages.tsx       # [Client] 画像表示・拡大モーダル
   ├── post-actions-menu.tsx    # [Client] 投稿編集・削除メニュー（本人のみ表示）
   ├── post-edit-dialog.tsx     # [Client] 投稿編集モーダルダイアログ
-  └── encouragement-modal.tsx  # [Client] 投稿時の激励/祝福モーダル（Claude API生成メッセージ、達成時confetti）
+  ├── encouragement-modal.tsx  # [Client] 投稿時の激励/祝福モーダル（Claude API生成メッセージ、達成時confetti）
+  ├── user-items-section.tsx   # [Client] マイアイテム折りたたみセクション
+  ├── user-item-card.tsx       # [Client] アイテムカード（OGPプレビュー付き）
+  └── user-item-form-dialog.tsx # [Client] アイテム追加・編集ダイアログ
 
 lib/
   ├── supabase/
@@ -154,6 +157,28 @@ UNIQUE(follower_id, following_id)  -- 同じユーザーを複数回フォロー
 CHECK(follower_id != following_id) -- 自分自身をフォロー不可
 ```
 
+#### テーブル: user_items（マイアイテム）
+```sql
+id            UUID PRIMARY KEY
+user_id       UUID (profiles参照) NOT NULL
+product_name  TEXT NOT NULL          -- 商品名
+product_url   TEXT                   -- 商品URL（任意）
+usage_method  TEXT                   -- 使用方法・頻度
+started_at    TIMESTAMP DEFAULT NOW()  -- 利用開始日（自動設定、編集不可）
+ended_at      TIMESTAMP              -- 利用停止日（NULL=利用中、設定後は編集不可）
+created_at    TIMESTAMP
+updated_at    TIMESTAMP
+```
+
+**RLS**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+
+**機能**:
+- マイページに折りたたみ式セクションとして表示
+- 登録時に自動で「利用開始日」が設定される
+- 「利用停止」アクションで停止日を記録（一度設定すると変更不可）
+- 商品URLがある場合はOGPプレビューを自動表示
+- 利用中アイテムが優先表示、停止済みアイテムは下に表示
+
 #### カテゴリ（ENUM型）
 | 値 | 日本語 | アイコン | 色 |
 |---|--------|---------|-----|
@@ -170,6 +195,7 @@ CHECK(follower_id != following_id) -- 自分自身をフォロー不可
 - **likes**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ削除可能
 - **comments**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ更新/削除可能
 - **follows**: 全員が閲覧可能、本人のみフォロー作成/削除可能
+- **user_items**: 全員が閲覧可能、本人のみ作成/更新/削除可能
 
 #### トリガー
 - `handle_new_user()`: 新規ユーザー登録時に自動でprofilesテーブルにレコード作成
@@ -937,7 +963,28 @@ gh pr create --title "機能追加" --body "説明"
    - [app/api/generate-message/route.ts](app/api/generate-message/route.ts) - 活動時間をプロンプトに含める
    - 例: 「活動時間: 30分」
 
+### マイアイテム機能追加 (2026-02-07)
+1. ✅ データベース拡張
+   - `user_items`テーブル追加（商品名、URL、使用方法、利用開始日、利用停止日）
+   - マイグレーション: `supabase/migrations/20260207200000_add_user_items_table.sql`
+   - RLSポリシー: 全員閲覧可、本人のみ作成/更新/削除可
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `UserItem`, `UserItemInsert`, `UserItemUpdate`型追加
+3. ✅ コンポーネント作成
+   - [components/user-items-section.tsx](components/user-items-section.tsx) - 折りたたみ式セクション
+   - [components/user-item-card.tsx](components/user-item-card.tsx) - アイテムカード（OGPプレビュー付き）
+   - [components/user-item-form-dialog.tsx](components/user-item-form-dialog.tsx) - 追加・編集ダイアログ
+4. ✅ マイページ統合
+   - [app/users/[id]/page.tsx](app/users/[id]/page.tsx) - UserProfileHeaderの下に配置
+5. ✅ 機能詳細
+   - 商品名（必須）、商品URL（任意）、使用方法（任意）を登録
+   - 登録時に「利用開始日」が自動設定（編集不可）
+   - 「利用停止」で停止日を記録（一度設定すると変更不可）
+   - 商品URLがある場合はOGPメタデータを取得してプレビュー表示
+   - 利用中アイテムが優先表示、停止済みは下に表示
+   - 折りたたみ式でデフォルトは閉じた状態
+
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: 活動時間入力機能追加
+**更新内容**: マイアイテム機能追加
