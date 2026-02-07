@@ -22,6 +22,9 @@ interface ProfileEditFormProps {
     avatar_url: string | null
     bio: string | null
     background_url: string | null
+    goal: string | null
+    ai_prompt: string | null
+    ai_tone: string | null
   }
 }
 
@@ -35,6 +38,9 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
   const router = useRouter()
   const [displayName, setDisplayName] = useState(profile.display_name || '')
   const [bio, setBio] = useState(profile.bio || '')
+  const [goal, setGoal] = useState(profile.goal || '')
+  const [aiPrompt, setAiPrompt] = useState(profile.ai_prompt || '')
+  const [aiTone, setAiTone] = useState(profile.ai_tone || '')
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatar_url)
   const [backgroundPreview, setBackgroundPreview] = useState<string | null>(profile.background_url)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -146,8 +152,11 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
         .update({
           display_name: displayName.trim() || null,
           bio: bio.trim() || null,
+          goal: goal.trim() || null,
           avatar_url: newAvatarUrl,
           background_url: newBackgroundUrl,
+          ai_prompt: aiPrompt.trim() || null,
+          ai_tone: aiTone.trim() || null,
         })
         .eq('id', profile.id)
 
@@ -285,7 +294,7 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                未設定の場合はユーザー名（@{profile.username}）が表示されます
+                未設定の場合はAIがユーモアのある名前をつけます
               </p>
             </div>
 
@@ -305,6 +314,73 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
                 {bio.length}/200
               </p>
             </div>
+
+            {/* 今の目標 */}
+            <div>
+              <Label htmlFor="goal" className="text-sm font-medium flex items-center gap-2">
+                <span>🎯</span>
+                <span>今の目標</span>
+              </Label>
+              <textarea
+                id="goal"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                placeholder="例: 体脂肪率15%を目指す / TOEIC 900点達成 / 毎日スキンケアを継続"
+                maxLength={200}
+                rows={2}
+                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="mt-1 text-xs text-muted-foreground text-right">
+                {goal.length}/200
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI設定 */}
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div>
+              <Label htmlFor="aiPrompt" className="text-sm font-medium flex items-center gap-2">
+                <span>🤖</span>
+                <span>AIアシスタントに覚えてほしいこと</span>
+              </Label>
+              <textarea
+                id="aiPrompt"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="例: マラソン完走を目標にトレーニング中 / JLPT N1を来年取得予定 / 週3回の筋トレを習慣化したい"
+                maxLength={500}
+                rows={3}
+                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="mt-1 text-xs text-muted-foreground text-right">
+                {aiPrompt.length}/500
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="aiTone" className="text-sm font-medium flex items-center gap-2">
+                <span>💬</span>
+                <span>AIの口調・スタイル</span>
+              </Label>
+              <textarea
+                id="aiTone"
+                value={aiTone}
+                onChange={(e) => setAiTone(e.target.value)}
+                placeholder="例: コーチのように厳しめに / カジュアルな友達口調で / 褒めて伸ばすタイプで"
+                maxLength={200}
+                rows={2}
+                className="mt-1 flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="mt-1 text-xs text-muted-foreground text-right">
+                {aiTone.length}/200
+              </p>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              投稿時にAIが生成する励ましメッセージをカスタマイズできます
+            </p>
           </CardContent>
         </Card>
 

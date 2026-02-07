@@ -12,6 +12,7 @@ interface UserProfileHeaderProps {
     avatar_url: string | null
     bio: string | null
     background_url: string | null
+    goal: string | null
   }
   postCount: number
   followerCount: number
@@ -72,7 +73,6 @@ export function UserProfileHeader({
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-xl font-bold">{displayName}</h2>
-            <p className="text-sm text-muted-foreground">@{profile.username}</p>
           </div>
           {isOwnProfile ? (
             <Link href="/profile/edit">
@@ -91,6 +91,16 @@ export function UserProfileHeader({
 
         {profile.bio && (
           <p className="mt-2 text-sm text-gray-700">{profile.bio}</p>
+        )}
+
+        {profile.goal && (
+          <p className="mt-2 text-sm text-gray-600">
+            <span className="inline-flex items-center gap-1">
+              <span>🎯</span>
+              <span className="font-medium">目標:</span>
+            </span>
+            {' '}{profile.goal}
+          </p>
         )}
 
         <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">

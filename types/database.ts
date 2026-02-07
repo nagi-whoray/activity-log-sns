@@ -37,6 +37,9 @@ export interface Database {
           avatar_url: string | null
           bio: string | null
           background_url: string | null
+          goal: string | null
+          ai_prompt: string | null
+          ai_tone: string | null
           created_at: string
           updated_at: string
         }
@@ -48,6 +51,9 @@ export interface Database {
           avatar_url?: string | null
           bio?: string | null
           background_url?: string | null
+          goal?: string | null
+          ai_prompt?: string | null
+          ai_tone?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -59,6 +65,9 @@ export interface Database {
           avatar_url?: string | null
           bio?: string | null
           background_url?: string | null
+          goal?: string | null
+          ai_prompt?: string | null
+          ai_tone?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -73,6 +82,7 @@ export interface Database {
           activity_date: string
           image_url: string | null
           log_type: LogType
+          ai_message: string | null
           created_at: string
           updated_at: string
         }
@@ -85,6 +95,7 @@ export interface Database {
           activity_date?: string
           image_url?: string | null
           log_type?: LogType
+          ai_message?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -97,6 +108,7 @@ export interface Database {
           activity_date?: string
           image_url?: string | null
           log_type?: LogType
+          ai_message?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -182,6 +194,7 @@ export interface Database {
           activity_date: string
           image_url: string | null
           log_type: LogType
+          ai_message: string | null
           created_at: string
           updated_at: string
           username: string

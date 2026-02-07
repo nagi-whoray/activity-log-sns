@@ -66,15 +66,27 @@ export function ActivityLogForm() {
         .single()
 
       if (!profile) {
+        // プロフィールを作成（display_nameはAIが生成）
         const { error: profileError } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email || '',
           username: user.email?.split('@')[0] || 'user',
-          display_name: user.email?.split('@')[0] || 'user',
         })
         if (profileError) {
           console.error('Profile creation error:', profileError)
           throw new Error('プロフィールの作成に失敗しました')
+        }
+
+        // AIにユーモアのある名前を生成してもらう
+        try {
+          await fetch('/api/generate-name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id }),
+          })
+        } catch (nameError) {
+          console.error('Name generation error:', nameError)
+          // 名前生成に失敗しても続行
         }
       }
 
@@ -89,7 +101,7 @@ export function ActivityLogForm() {
         imageUrls = uploadResults.map((result) => result.url)
       }
 
-      const { error } = await supabase.from('activity_logs').insert({
+      const { data: insertedLog, error } = await supabase.from('activity_logs').insert({
         user_id: user.id,
         category,
         title: '',
@@ -97,7 +109,7 @@ export function ActivityLogForm() {
         activity_date: activityDate,
         image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
         log_type: logType,
-      })
+      }).select('id').single()
 
       if (error) throw error
 
@@ -121,7 +133,8 @@ export function ActivityLogForm() {
             logType,
             category,
             content: content.trim(),
-            userId: user.id
+            userId: user.id,
+            logId: insertedLog?.id
           })
         })
         const data = await res.json()
