@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import confetti from 'canvas-confetti'
 import {
   Dialog,
@@ -10,6 +10,18 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { LogType } from '@/types/database'
+
+// 達成ログ用絵文字
+const ACHIEVEMENT_TITLE_EMOJIS = ['🏆', '🎊', '👑', '🥇', '⭐']
+const ACHIEVEMENT_BODY_EMOJIS = ['🎉', '🎊', '✨', '🌟', '💫', '🥳']
+
+// 活動ログ用絵文字
+const ACTIVITY_TITLE_EMOJIS = ['💪', '🔥', '⚡', '🌈', '🚀']
+const ACTIVITY_BODY_EMOJIS = ['✨', '🌟', '💫', '🙌', '👏', '🎯']
+
+function getRandomEmoji(emojis: string[]): string {
+  return emojis[Math.floor(Math.random() * emojis.length)]
+}
 
 interface EncouragementModalProps {
   open: boolean
@@ -27,6 +39,21 @@ export function EncouragementModal({
   isLoading
 }: EncouragementModalProps) {
   const isAchievement = logType === 'achievement'
+
+  // モーダルが開くたびに新しい絵文字を選択
+  const { titleEmoji, bodyEmoji } = useMemo(() => {
+    if (isAchievement) {
+      return {
+        titleEmoji: getRandomEmoji(ACHIEVEMENT_TITLE_EMOJIS),
+        bodyEmoji: getRandomEmoji(ACHIEVEMENT_BODY_EMOJIS)
+      }
+    }
+    return {
+      titleEmoji: getRandomEmoji(ACTIVITY_TITLE_EMOJIS),
+      bodyEmoji: getRandomEmoji(ACTIVITY_BODY_EMOJIS)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isAchievement])
 
   useEffect(() => {
     if (open && isAchievement) {
@@ -61,12 +88,12 @@ export function EncouragementModal({
       <DialogContent className="sm:max-w-md text-center">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            {isAchievement ? '🏆 達成おめでとう！' : '💪 お疲れさまです！'}
+            {isAchievement ? `${titleEmoji} 達成おめでとう！` : `${titleEmoji} お疲れさまです！`}
           </DialogTitle>
         </DialogHeader>
         <div className="py-6">
           <p className={`text-6xl mb-4 ${isAchievement ? 'animate-bounce' : ''}`}>
-            {isAchievement ? '🎉' : '✨'}
+            {bodyEmoji}
           </p>
           {isLoading ? (
             <p className="text-muted-foreground">メッセージを生成中...</p>
