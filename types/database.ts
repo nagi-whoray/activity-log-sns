@@ -81,6 +81,7 @@ export interface Database {
           content: string
           activity_date: string
           image_url: string | null
+          is_image_private: boolean
           log_type: LogType
           ai_message: string | null
           created_at: string
@@ -94,6 +95,7 @@ export interface Database {
           content: string
           activity_date?: string
           image_url?: string | null
+          is_image_private?: boolean
           log_type?: LogType
           ai_message?: string | null
           created_at?: string
@@ -107,6 +109,7 @@ export interface Database {
           content?: string
           activity_date?: string
           image_url?: string | null
+          is_image_private?: boolean
           log_type?: LogType
           ai_message?: string | null
           created_at?: string
@@ -193,6 +196,7 @@ export interface Database {
           content: string
           activity_date: string
           image_url: string | null
+          is_image_private: boolean
           log_type: LogType
           ai_message: string | null
           created_at: string

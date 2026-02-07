@@ -32,6 +32,7 @@ export function ActivityLogForm() {
     toLocalDateString(new Date())
   )
   const [images, setImages] = useState<ImagePreview[]>([])
+  const [isImagePrivate, setIsImagePrivate] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
@@ -108,6 +109,7 @@ export function ActivityLogForm() {
         content: content.trim(),
         activity_date: activityDate,
         image_url: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
+        is_image_private: imageUrls.length > 0 ? isImagePrivate : false,
         log_type: logType,
       }).select('id').single()
 
@@ -119,6 +121,7 @@ export function ActivityLogForm() {
       setContent('')
       setActivityDate(toLocalDateString(new Date()))
       setImages([])
+      setIsImagePrivate(false)
 
       // モーダルを表示してメッセージを生成
       setSubmittedLogType(logType)
@@ -263,6 +266,44 @@ export function ActivityLogForm() {
               disabled={loading}
             />
           </div>
+
+          {/* 画像の公開設定 */}
+          {images.length > 0 && (
+            <div className="space-y-2">
+              <Label>画像の公開設定</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsImagePrivate(false)}
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${
+                    !isImagePrivate
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">🌐</span>
+                  <span className="ml-1 text-sm font-medium">公開</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsImagePrivate(true)}
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${
+                    isImagePrivate
+                      ? 'border-gray-500 bg-gray-50 text-gray-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">🔒</span>
+                  <span className="ml-1 text-sm font-medium">非公開</span>
+                </button>
+              </div>
+              {isImagePrivate && (
+                <p className="text-xs text-muted-foreground">
+                  非公開にすると、他のユーザーには画像が表示されず、非公開の画像があることだけが伝わります。
+                </p>
+              )}
+            </div>
+          )}
 
           <Button
             type="submit"

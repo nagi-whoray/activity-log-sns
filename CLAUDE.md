@@ -103,17 +103,18 @@ updated_at    TIMESTAMP
 
 #### テーブル: activity_logs（活動ログ/達成ログ）
 ```sql
-id            UUID PRIMARY KEY
-user_id       UUID (profiles参照)
-category      activity_category NOT NULL  -- 'workout' | 'study' | 'beauty'
-title         TEXT NOT NULL
-content       TEXT NOT NULL
-activity_date DATE DEFAULT CURRENT_DATE
-image_url     TEXT
-log_type      TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
-ai_message    TEXT          -- AIが生成した励ましメッセージ（重複防止用に保存）
-created_at    TIMESTAMP
-updated_at    TIMESTAMP
+id               UUID PRIMARY KEY
+user_id          UUID (profiles参照)
+category         activity_category NOT NULL  -- 'workout' | 'study' | 'beauty'
+title            TEXT NOT NULL
+content          TEXT NOT NULL
+activity_date    DATE DEFAULT CURRENT_DATE
+image_url        TEXT
+is_image_private BOOLEAN DEFAULT FALSE  -- 画像の公開/非公開設定
+log_type         TEXT NOT NULL DEFAULT 'activity'  -- 'activity' | 'achievement'
+ai_message       TEXT          -- AIが生成した励ましメッセージ（重複防止用に保存）
+created_at       TIMESTAMP
+updated_at       TIMESTAMP
 ```
 
 #### ログタイプ
@@ -204,6 +205,9 @@ CHECK(follower_id != following_id) -- 自分自身をフォロー不可
 - 最大枚数: 3枚/投稿
 - クライアント側圧縮: browser-image-compression使用（1MB以下、1920px以下）
 - 画像URLはJSON配列として `activity_logs.image_url` に保存
+- **公開/非公開設定**: 画像添付時に公開（🌐）または非公開（🔒）を選択可能
+  - 非公開画像は他のユーザーには「🔒 非公開の画像がN枚あります」と表示
+  - 投稿者本人には画像が表示され、「非公開（他のユーザーには表示されません）」のインジケーター表示
 
 #### プロフィール画像機能
 
@@ -722,6 +726,23 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - 生成されたメッセージをログに保存、次回生成時に参照して重複を防ぐ
    - プロンプトに「過去のメッセージと同じ表現を繰り返さない」指示を追加
 
+### 画像公開/非公開機能追加 (2026-02-07)
+1. ✅ データベース拡張
+   - `activity_logs`テーブルに`is_image_private`カラム追加（BOOLEAN DEFAULT FALSE）
+   - マイグレーション: `supabase/migrations/20260207150100_add_is_image_private_to_activity_logs.sql`
+   - 既存レコードのnull値修正: `supabase/migrations/20260207150200_fix_is_image_private_null.sql`
+2. ✅ 投稿フォーム拡張
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - 画像添付時に公開/非公開選択UI追加
+   - 「🌐 公開」「🔒 非公開」ボタンで切り替え
+3. ✅ 画像表示コンポーネント更新
+   - [components/ActivityImages.tsx](components/ActivityImages.tsx) - 非公開画像の表示制御
+   - 他のユーザー: 「🔒 非公開の画像がN枚あります」と表示
+   - 投稿者本人: 画像表示 + 「非公開（他のユーザーには表示されません）」インジケーター
+4. ✅ 投稿編集ダイアログ更新
+   - [components/post-edit-dialog.tsx](components/post-edit-dialog.tsx) - 編集時にも公開/非公開変更可能
+5. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `is_image_private`フィールド追加
+
 ### データベーススキーマ確認方法
 Supabaseで実際のテーブル構造を確認：
 1. Supabaseダッシュボード → Table Editor
@@ -828,4 +849,4 @@ gh pr create --title "機能追加" --body "説明"
 ---
 
 **最終更新**: 2026-02-07
-**更新内容**: AIパーソナライゼーション機能追加（ユーザー別AI設定、目標フィールド、AI自動名前生成、メッセージ重複防止）
+**更新内容**: 画像公開/非公開機能追加（投稿画像を非公開に設定可能、他のユーザーには非公開の画像があることだけ表示）

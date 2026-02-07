@@ -29,6 +29,7 @@ interface PostEditDialogProps {
     category: ActivityCategory
     content: string
     image_url: string | null
+    is_image_private: boolean
     user_id: string
   }
 }
@@ -64,6 +65,7 @@ export function PostEditDialog({ open, onOpenChange, post }: PostEditDialogProps
   const [existingImages, setExistingImages] = useState<ExistingImage[]>([])
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
   const [newImages, setNewImages] = useState<ImagePreview[]>([])
+  const [isImagePrivate, setIsImagePrivate] = useState(post.is_image_private)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export function PostEditDialog({ open, onOpenChange, post }: PostEditDialogProps
       setExistingImages(parseExistingImages(post.image_url))
       setImagesToDelete([])
       setNewImages([])
+      setIsImagePrivate(post.is_image_private)
     }
   }, [open, post])
 
@@ -113,6 +116,7 @@ export function PostEditDialog({ open, onOpenChange, post }: PostEditDialogProps
           category,
           content: content.trim(),
           image_url: finalImageUrls.length > 0 ? JSON.stringify(finalImageUrls) : null,
+          is_image_private: finalImageUrls.length > 0 ? isImagePrivate : false,
         })
         .eq('id', post.id)
 
@@ -216,6 +220,46 @@ export function PostEditDialog({ open, onOpenChange, post }: PostEditDialogProps
                 onImagesChange={setNewImages}
                 disabled={loading}
               />
+            </div>
+          )}
+
+          {/* 画像の公開設定 */}
+          {(existingImages.length > 0 || newImages.length > 0) && (
+            <div className="space-y-2">
+              <Label>画像の公開設定</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsImagePrivate(false)}
+                  disabled={loading}
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${
+                    !isImagePrivate
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">🌐</span>
+                  <span className="ml-1 text-sm font-medium">公開</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsImagePrivate(true)}
+                  disabled={loading}
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 transition-all ${
+                    isImagePrivate
+                      ? 'border-gray-500 bg-gray-50 text-gray-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-lg">🔒</span>
+                  <span className="ml-1 text-sm font-medium">非公開</span>
+                </button>
+              </div>
+              {isImagePrivate && (
+                <p className="text-xs text-muted-foreground">
+                  非公開にすると、他のユーザーには画像が表示されず、非公開の画像があることだけが伝わります。
+                </p>
+              )}
             </div>
           )}
 

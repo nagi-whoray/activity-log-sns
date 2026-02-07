@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   content TEXT NOT NULL,
   activity_date DATE DEFAULT CURRENT_DATE,
   image_url TEXT,
+  is_image_private BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -243,7 +244,16 @@ CREATE INDEX IF NOT EXISTS comments_created_at_idx ON comments(created_at DESC);
 -- 活動ログにいいね数とコメント数を含めたビュー
 CREATE OR REPLACE VIEW activity_logs_with_counts AS
 SELECT
-  al.*,
+  al.id,
+  al.user_id,
+  al.category,
+  al.title,
+  al.content,
+  al.activity_date,
+  al.image_url,
+  al.is_image_private,
+  al.created_at,
+  al.updated_at,
   p.username,
   p.display_name,
   p.avatar_url,
@@ -261,6 +271,14 @@ LEFT JOIN (
   FROM comments
   GROUP BY activity_log_id
 ) c ON al.id = c.activity_log_id;
+
+-- ============================================
+-- マイグレーション: is_image_private カラムの追加
+-- 既存のテーブルに対して実行する場合
+-- ============================================
+
+-- activity_logs テーブルに is_image_private カラムを追加（既存テーブルがある場合）
+-- ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS is_image_private BOOLEAN DEFAULT FALSE;
 
 -- ============================================
 -- セットアップ完了

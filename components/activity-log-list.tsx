@@ -26,6 +26,7 @@ interface ActivityLog {
   updated_at: string
   user_id: string
   image_url: string | null
+  is_image_private: boolean
   log_type: LogType
   profiles: {
     id: string
@@ -305,7 +306,11 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
               <p className="whitespace-pre-wrap text-gray-700">{log.content}</p>
 
               {/* 画像表示 */}
-              <ActivityImages imageUrl={log.image_url} />
+              <ActivityImages
+                imageUrl={log.image_url}
+                isImagePrivate={log.is_image_private ?? false}
+                isOwner={log.user_id === currentUserId}
+              />
 
               {/* いいね・コメントボタン */}
               <div className="flex items-center gap-2 pt-2 border-t">

@@ -6,10 +6,12 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Lock } from 'lucide-react'
 
 type ActivityImagesProps = {
   imageUrl: string | null
+  isImagePrivate?: boolean
+  isOwner?: boolean
 }
 
 function parseImageUrls(imageUrl: string | null): string[] {
@@ -27,13 +29,26 @@ function parseImageUrls(imageUrl: string | null): string[] {
   }
 }
 
-export function ActivityImages({ imageUrl }: ActivityImagesProps) {
+export function ActivityImages({ imageUrl, isImagePrivate = false, isOwner = false }: ActivityImagesProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const imageUrls = parseImageUrls(imageUrl)
 
   if (imageUrls.length === 0) return null
+
+  // 非公開画像で、かつ自分の投稿でない場合は非公開表示
+  if (isImagePrivate && !isOwner) {
+    return (
+      <div className="flex items-center gap-2 p-4 bg-gray-100 rounded-lg border border-gray-200">
+        <Lock className="w-5 h-5 text-gray-500" />
+        <span className="text-sm text-gray-600">非公開の画像が{imageUrls.length}枚あります</span>
+      </div>
+    )
+  }
+
+  // 自分の非公開画像には目印を表示
+  const showPrivateIndicator = isImagePrivate && isOwner
 
   const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -52,6 +67,13 @@ export function ActivityImages({ imageUrl }: ActivityImagesProps) {
 
   return (
     <>
+      {/* 非公開インジケーター（自分の投稿用） */}
+      {showPrivateIndicator && (
+        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+          <Lock className="w-3 h-3" />
+          <span>非公開（他のユーザーには表示されません）</span>
+        </div>
+      )}
       {/* サムネイル表示 */}
       <div
         className={`grid gap-2 ${
