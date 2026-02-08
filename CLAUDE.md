@@ -1229,7 +1229,18 @@ iOSネイティブアプリは別リポジトリで開発:
    - 未読は青背景でハイライト
    - 30秒ごとにポーリングで未読数更新
 
+### 投稿フォームUI改善 (2026-02-08)
+1. ✅ 投稿フォーム折りたたみ機能
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - 折りたたみUI追加
+   - デフォルトで折りたたみ状態、クリックで展開
+   - lucide-react `ChevronDown`/`ChevronUp` アイコン使用
+2. ✅ 画像アップロード進捗バー
+   - [components/activity-log-form.tsx](components/activity-log-form.tsx) - 進捗表示UI追加
+   - [lib/supabase-storage.ts](lib/supabase-storage.ts) - `uploadMultipleImagesWithProgress` 関数追加
+   - [components/ui/progress.tsx](components/ui/progress.tsx) - shadcn/ui Progress コンポーネント追加
+   - アップロード中は「画像アップロード中... X/Y」と進捗バーを表示
+
 ---
 
 **最終更新**: 2026-02-08
-**更新内容**: 通知センター機能追加（いいね/コメント/フォロー通知）
+**更新内容**: 投稿フォーム折りたたみ機能と画像アップロード進捗バーを追加
