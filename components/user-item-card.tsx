@@ -90,10 +90,6 @@ export function UserItemCard({ item, isOwnProfile, userId }: UserItemCardProps) 
             )}
           </div>
 
-          {item.usage_method && (
-            <p className="text-sm text-muted-foreground mt-1">{item.usage_method}</p>
-          )}
-
           <p className="text-xs text-muted-foreground mt-1">
             {isActive ? (
               <span className="text-green-600">
@@ -105,6 +101,10 @@ export function UserItemCard({ item, isOwnProfile, userId }: UserItemCardProps) 
               </span>
             )}
           </p>
+
+          {item.usage_method && (
+            <p className="text-sm text-muted-foreground mt-1">{item.usage_method}</p>
+          )}
         </div>
 
         {isOwnProfile && (
