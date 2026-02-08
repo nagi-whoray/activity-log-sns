@@ -77,6 +77,7 @@ interface ActivityLogCardProps {
   isFollowing: boolean
   onLikeUpdate?: (logId: string, isLiked: boolean) => void
   onDelete?: (logId: string) => void
+  defaultExpandComments?: boolean
 }
 
 function formatDuration(minutes: number): string {
@@ -234,8 +235,9 @@ function ActivityLogCardInner({
   isFollowing,
   onLikeUpdate,
   onDelete,
+  defaultExpandComments = false,
 }: ActivityLogCardProps) {
-  const [expandedComments, setExpandedComments] = useState(false)
+  const [expandedComments, setExpandedComments] = useState(defaultExpandComments)
   const [editingPost, setEditingPost] = useState(false)
   const router = useRouter()
   const supabase = createClient()
