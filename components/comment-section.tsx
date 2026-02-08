@@ -118,6 +118,17 @@ export function CommentSection({
 
       if (error) throw error
 
+      // 通知も削除
+      try {
+        await supabase
+          .from('notifications')
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('type', 'comment')
+      } catch {
+        // 通知削除失敗は無視
+      }
+
       setLocalComments((prev) => prev.filter((c) => c.id !== commentId))
       router.refresh()
     } catch (error) {
