@@ -8,6 +8,45 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
+    // 認証チェック（iOSアプリからのBearerトークンまたはWebのセッション）
+    const authHeader = request.headers.get('Authorization')
+    let authenticatedUserId: string | null = null
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // iOSアプリ: Bearerトークンを検証
+      const token = authHeader.substring(7)
+      const { data: { user }, error } = await supabase.auth.getUser(token)
+
+      if (error || !user) {
+        return NextResponse.json(
+          { error: '認証に失敗しました', name: '名無しさん' },
+          { status: 401 }
+        )
+      }
+
+      authenticatedUserId = user.id
+    } else {
+      // Webアプリ: クッキーベースのセッション
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        return NextResponse.json(
+          { error: '認証が必要です', name: '名無しさん' },
+          { status: 401 }
+        )
+      }
+
+      authenticatedUserId = user.id
+    }
+
+    // リクエストのuserIdと認証ユーザーが一致するか確認
+    if (userId && userId !== authenticatedUserId) {
+      return NextResponse.json(
+        { error: '権限がありません', name: '名無しさん' },
+        { status: 403 }
+      )
+    }
+
     // Claude APIでユーモアのある名前を生成
     const client = new Anthropic()
     const message = await client.messages.create({
@@ -32,11 +71,11 @@ export async function POST(request: Request) {
       ? message.content[0].text.trim()
       : '名無しさん'
 
-    // 生成した名前をプロフィールに保存
+    // 生成した名前をプロフィールに保存（認証済みユーザーのIDを使用）
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ display_name: generatedName })
-      .eq('id', userId)
+      .eq('id', authenticatedUserId)
 
     if (updateError) {
       console.error('Profile update error:', updateError)
