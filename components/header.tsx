@@ -33,7 +33,7 @@ export function Header({ user, profileName }: HeaderProps) {
         <div className="flex items-center justify-between">
           <div>
             <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
-              Activity Log SNS
+              Recowork
             </Link>
             {user && profileName && (
               <p className="text-sm text-muted-foreground">{profileName}</p>
