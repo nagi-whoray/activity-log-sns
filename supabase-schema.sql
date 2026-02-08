@@ -175,7 +175,7 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1))
+    NEW.raw_user_meta_data->>'display_name'  -- NULLの場合はAIが名前を自動生成
   );
   RETURN NEW;
 END;
