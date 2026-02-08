@@ -89,16 +89,18 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
       // プロフィールが存在するか確認し、なければ自動作成
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, display_name')
+        .select('id, display_name, username')
         .eq('id', user.id)
         .single()
+
+      const emailPrefix = user.email?.split('@')[0]
 
       if (!profile) {
         // プロフィールを作成（display_nameはAIが生成）
         const { error: profileError } = await supabase.from('profiles').insert({
           id: user.id,
           email: user.email || '',
-          username: user.email?.split('@')[0] || 'user',
+          username: emailPrefix || 'user',
         })
         if (profileError) {
           console.error('Profile creation error:', profileError)
@@ -111,22 +113,30 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: user.id }),
+            credentials: 'include',
           })
         } catch (nameError) {
           console.error('Name generation error:', nameError)
           // 名前生成に失敗しても続行
         }
-      } else if (!profile.display_name) {
-        // プロフィールは存在するがdisplay_nameがNULLの場合、名前を生成
-        try {
-          await fetch('/api/generate-name', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id }),
-          })
-        } catch (nameError) {
-          console.error('Name generation error:', nameError)
-          // 名前生成に失敗しても続行
+      } else {
+        // display_nameがNULL、またはメールプレフィックスと同じ場合は名前を生成
+        const needsNameGeneration = !profile.display_name ||
+          profile.display_name === profile.username ||
+          profile.display_name === emailPrefix
+
+        if (needsNameGeneration) {
+          try {
+            await fetch('/api/generate-name', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.id }),
+              credentials: 'include',
+            })
+          } catch (nameError) {
+            console.error('Name generation error:', nameError)
+            // 名前生成に失敗しても続行
+          }
         }
       }
 

@@ -343,7 +343,7 @@ function ActivityLogCardInner({
                   <p className="text-xs">
                     投稿 {new Date(log.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                   </p>
-                  {(new Date(log.updated_at).getTime() - new Date(log.created_at).getTime()) > 10000 && (
+                  {(new Date(log.updated_at).getTime() - new Date(log.created_at).getTime()) > 60000 && (
                     <p className="text-xs">
                       更新 {new Date(log.updated_at).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/-/g, '/')} {new Date(log.updated_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                     </p>

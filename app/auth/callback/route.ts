@@ -17,12 +17,18 @@ export async function GET(request: Request) {
         if (user) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('display_name')
+            .select('display_name, username')
             .eq('id', user.id)
             .single()
 
-          // display_nameがNULLの場合のみ名前を生成
-          if (profile && !profile.display_name) {
+          // display_nameがNULL、またはusername(メールプレフィックス)と同じ場合は名前を生成
+          const needsNameGeneration = profile && (
+            !profile.display_name ||
+            profile.display_name === profile.username ||
+            profile.display_name === user.email?.split('@')[0]
+          )
+
+          if (needsNameGeneration) {
             const client = new Anthropic()
             const message = await client.messages.create({
               model: 'claude-3-haiku-20240307',
