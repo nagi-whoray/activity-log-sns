@@ -37,6 +37,19 @@ export function FollowButton({
           .eq('following_id', targetUserId)
 
         if (error) throw error
+
+        // 通知も削除（失敗は無視）
+        try {
+          await supabase
+            .from('notifications')
+            .delete()
+            .eq('actor_id', currentUserId)
+            .eq('user_id', targetUserId)
+            .eq('type', 'follow')
+        } catch {
+          // 通知削除失敗は無視
+        }
+
         setIsFollowing(false)
       } else {
         const { error } = await supabase.from('follows').insert({
@@ -45,6 +58,18 @@ export function FollowButton({
         })
 
         if (error) throw error
+
+        // フォロー通知を作成（失敗は無視）
+        try {
+          await supabase.from('notifications').insert({
+            user_id: targetUserId,
+            actor_id: currentUserId,
+            type: 'follow',
+          })
+        } catch {
+          // 通知作成失敗は無視
+        }
+
         setIsFollowing(true)
       }
 

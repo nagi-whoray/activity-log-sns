@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
+import { NotificationButton } from '@/components/notification-button'
 
 interface HeaderProps {
   user: User | null
@@ -52,6 +53,7 @@ export function Header({ user, profileName }: HeaderProps) {
                     マイページ
                   </Button>
                 </Link>
+                <NotificationButton />
                 <Button variant="outline" onClick={handleSignOut}>
                   ログアウト
                 </Button>
@@ -82,6 +84,9 @@ export function Header({ user, profileName }: HeaderProps) {
                 マイページ
               </Button>
             </Link>
+            <div className="flex justify-start">
+              <NotificationButton />
+            </div>
             <Button variant="outline" onClick={handleSignOut} className="w-full">
               ログアウト
             </Button>

@@ -25,7 +25,8 @@ Next.js 14 + Supabaseを使った活動ログSNSアプリケーション。ユ�
 app/
   ├── api/
   │   ├── generate-message/  # Claude APIを使ったメッセージ生成エンドポイント
-  │   └── generate-name/     # Claude APIを使ったユーモアある名前生成エンドポイント
+  │   ├── generate-name/     # Claude APIを使ったユーモアある名前生成エンドポイント
+  │   └── notifications/     # 通知API（一覧、未読数、既読マーク）
   ├── auth/callback/      # Supabase認証後のコールバック処理
   ├── login/              # 未認証ユーザー向けログインページ
   ├── profile/edit/       # プロフィール編集ページ
@@ -34,13 +35,15 @@ app/
 
 components/
   ├── ui/                      # shadcn/uiの再利用可能コンポーネント
-  ├── header.tsx               # [Client] ヘッダー（タイムライン・マイページ・ログアウト、モバイル用ハンバーガーメニュー）
+  ├── header.tsx               # [Client] ヘッダー（タイムライン・マイページ・ログアウト、通知ベル、モバイル用ハンバーガーメニュー）
   ├── login-form.tsx           # [Client] ログイン/登録フォーム
   ├── activity-log-form.tsx    # [Client] 活動ログ/達成ログ投稿フォーム（ログタイプ選択・画像アップロード対応）
   ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
   ├── activity-calendar.tsx    # [Client] 投稿カレンダー（月間表示・日付フィルタ・達成ログ金色ハイライト対応）
   ├── comment-section.tsx      # [Client] コメント機能
   ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
+  ├── notification-button.tsx  # [Client] 通知ベルボタン（未読バッジ・30秒ポーリング）
+  ├── notification-dropdown.tsx # [Client] 通知ドロップダウン一覧
   ├── timeline-tabs.tsx        # [Client] タイムラインタブ（全部/活動ログ/達成ログ/フォロー中）+ カテゴリフィルタ
   ├── user-profile-header.tsx  # [Server] ユーザープロフィールヘッダー
   ├── profile-edit-form.tsx    # [Client] プロフィール編集フォーム（画像アップロード・クロップ対応）
@@ -220,6 +223,26 @@ updated_at        TIMESTAMP
 | `work` | 仕事 | 💼 | パープル |
 | `dev` | 開発 | 💻 | ティール |
 
+#### テーブル: notifications（通知）
+```sql
+id              UUID PRIMARY KEY
+user_id         UUID (profiles参照) NOT NULL  -- 受信者
+actor_id        UUID (profiles参照) NOT NULL  -- 実行者
+type            TEXT NOT NULL  -- 'like' | 'comment' | 'follow'
+activity_log_id UUID (activity_logs参照)  -- nullable
+comment_id      UUID (comments参照)        -- nullable
+is_read         BOOLEAN DEFAULT FALSE NOT NULL
+created_at      TIMESTAMP
+UNIQUE(user_id, actor_id, type, activity_log_id)  -- 重複防止
+```
+
+**通知タイプ**:
+| 値 | 説明 |
+|---|------|
+| `like` | いいね通知 |
+| `comment` | コメント通知 |
+| `follow` | フォロー通知 |
+
 #### RLS (Row Level Security)
 - **profiles**: 全員が閲覧可能、本人のみ更新可能
 - **activity_logs**: 全員が閲覧可能、本人のみ作成/更新/削除可能
@@ -228,6 +251,7 @@ updated_at        TIMESTAMP
 - **follows**: 全員が閲覧可能、本人のみフォロー作成/削除可能
 - **user_items**: 全員が閲覧可能、本人のみ作成/更新/削除可能
 - **user_routines**: 全員が閲覧可能、本人のみ作成/更新/削除可能
+- **notifications**: 本人の通知のみ閲覧可能、通知作成は認証ユーザー、本人のみ更新可能、作成者のみ削除可能
 
 #### トリガー
 - `handle_new_user()`: 新規ユーザー登録時に自動でprofilesテーブルにレコード作成
@@ -1176,7 +1200,36 @@ iOSネイティブアプリは別リポジトリで開発:
    - マイグレーション: `supabase/migrations/20260208180000_fix_display_name_trigger.sql`
    - [supabase-schema.sql](supabase-schema.sql) も更新
 
+### 通知センター機能追加 (2026-02-08)
+1. ✅ データベース拡張
+   - `notifications`テーブル追加（受信者、実行者、通知タイプ、既読フラグ）
+   - 通知タイプ: `like`（いいね）、`comment`（コメント）、`follow`（フォロー）
+   - マイグレーション: `supabase/migrations/20260208200000_add_notifications_table.sql`
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `NotificationType`, `Notification`, `NotificationWithDetails`型追加
+3. ✅ APIルート作成
+   - [app/api/notifications/route.ts](app/api/notifications/route.ts) - 通知一覧取得（ページネーション対応）
+   - [app/api/notifications/unread-count/route.ts](app/api/notifications/unread-count/route.ts) - 未読数取得
+   - [app/api/notifications/mark-read/route.ts](app/api/notifications/mark-read/route.ts) - 既読マーク（個別/一括）
+4. ✅ コンポーネント作成
+   - [components/notification-button.tsx](components/notification-button.tsx) - ベルアイコン＋未読バッジ
+   - [components/notification-dropdown.tsx](components/notification-dropdown.tsx) - ドロップダウン通知一覧
+5. ✅ ヘッダー統合
+   - [components/header.tsx](components/header.tsx) - NotificationButton追加（マイページとログアウトの間）
+6. ✅ 通知トリガー
+   - [components/activity-log-list.tsx](components/activity-log-list.tsx) - いいね時に通知作成/削除
+   - [components/comment-section.tsx](components/comment-section.tsx) - コメント時に通知作成
+   - [components/follow-button.tsx](components/follow-button.tsx) - フォロー時に通知作成/削除
+7. ✅ UI仕様
+   - ベルアイコン（lucide-react Bell）
+   - 未読数バッジ（赤丸、99+表示対応）
+   - クリックでドロップダウン表示
+   - 通知クリックで該当投稿/プロフィールに遷移
+   - 「すべて既読」ボタン
+   - 未読は青背景でハイライト
+   - 30秒ごとにポーリングで未読数更新
+
 ---
 
 **最終更新**: 2026-02-08
-**更新内容**: 名前自動生成トリガー修正、アカウント削除機能追加
+**更新内容**: 通知センター機能追加（いいね/コメント/フォロー通知）

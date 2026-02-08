@@ -28,6 +28,16 @@ export const LOG_TYPE_LABELS: Record<LogType, string> = {
   achievement: '達成ログ',
 }
 
+// 通知タイプの型
+export type NotificationType = 'like' | 'comment' | 'follow'
+
+// 通知タイプの日本語ラベル
+export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+  like: 'いいね',
+  comment: 'コメント',
+  follow: 'フォロー',
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -304,6 +314,31 @@ export interface Database {
           updated_at?: string
         }
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          actor_id: string
+          type: NotificationType
+          activity_log_id: string | null
+          comment_id: string | null
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          actor_id: string
+          type: NotificationType
+          activity_log_id?: string | null
+          comment_id?: string | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          is_read?: boolean
+        }
+      }
     }
     Views: {
       activity_logs_with_counts: {
@@ -366,6 +401,10 @@ export type UserRoutine = Database['public']['Tables']['user_routines']['Row']
 export type UserRoutineInsert = Database['public']['Tables']['user_routines']['Insert']
 export type UserRoutineUpdate = Database['public']['Tables']['user_routines']['Update']
 
+export type Notification = Database['public']['Tables']['notifications']['Row']
+export type NotificationInsert = Database['public']['Tables']['notifications']['Insert']
+export type NotificationUpdate = Database['public']['Tables']['notifications']['Update']
+
 export type ActivityLogWithCounts = Database['public']['Views']['activity_logs_with_counts']['Row']
 
 // JOINを含む型
@@ -382,6 +421,12 @@ export type ActivityLogWithAll = ActivityLog & {
 
 export type CommentWithProfile = Comment & {
   profiles: Profile
+}
+
+// 通知のJOIN型
+export type NotificationWithDetails = Notification & {
+  actor: Profile
+  activity_log?: ActivityLog & { profiles: Profile }
 }
 
 // ページネーション用の型

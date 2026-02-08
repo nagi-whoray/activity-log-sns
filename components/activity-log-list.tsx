@@ -90,10 +90,12 @@ const CATEGORY_STYLES: Record<ActivityCategory, { bg: string; text: string; icon
 
 function LikeButton({
   activityLogId,
+  postOwnerId,
   likes,
   currentUserId,
 }: {
   activityLogId: string
+  postOwnerId: string
   likes: {
     id: string
     user_id: string
@@ -134,6 +136,18 @@ function LikeButton({
 
         if (error) throw error
 
+        // 通知も削除（失敗は無視）
+        try {
+          await supabase
+            .from('notifications')
+            .delete()
+            .eq('actor_id', currentUserId)
+            .eq('activity_log_id', activityLogId)
+            .eq('type', 'like')
+        } catch {
+          // 通知削除失敗は無視
+        }
+
         setIsLiked(false)
         setLikesCount((prev) => prev - 1)
       } else {
@@ -144,6 +158,20 @@ function LikeButton({
         })
 
         if (error) throw error
+
+        // 自分の投稿以外には通知を作成（失敗は無視）
+        if (postOwnerId !== currentUserId) {
+          try {
+            await supabase.from('notifications').insert({
+              user_id: postOwnerId,
+              actor_id: currentUserId,
+              type: 'like',
+              activity_log_id: activityLogId,
+            })
+          } catch {
+            // 通知作成失敗は無視
+          }
+        }
 
         setIsLiked(true)
         setLikesCount((prev) => prev + 1)
@@ -412,6 +440,7 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
               <div className="flex items-center gap-2 pt-2 border-t">
                 <LikeButton
                   activityLogId={log.id}
+                  postOwnerId={log.user_id}
                   likes={log.likes}
                   currentUserId={currentUserId}
                 />
@@ -430,6 +459,7 @@ export function ActivityLogList({ activityLogs, currentUserId, followingIds = []
               {expandedComments.has(log.id) && (
                 <CommentSection
                   activityLogId={log.id}
+                  postOwnerId={log.user_id}
                   comments={log.comments}
                   currentUserId={currentUserId}
                 />

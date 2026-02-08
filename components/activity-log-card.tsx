@@ -392,6 +392,7 @@ function ActivityLogCardInner({
           {expandedComments && (
             <CommentSection
               activityLogId={log.id}
+              postOwnerId={log.user_id}
               comments={log.comments}
               currentUserId={currentUserId}
             />

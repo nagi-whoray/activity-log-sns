@@ -23,12 +23,14 @@ interface Comment {
 
 interface CommentSectionProps {
   activityLogId: string
+  postOwnerId: string
   comments: Comment[]
   currentUserId: string | null
 }
 
 export function CommentSection({
   activityLogId,
+  postOwnerId,
   comments,
   currentUserId,
 }: CommentSectionProps) {
@@ -70,14 +72,29 @@ export function CommentSection({
 
       if (data) {
         // Supabaseの戻り値を整形
-        const newComment: Comment = {
+        const newCommentData: Comment = {
           id: data.id,
           content: data.content,
           created_at: data.created_at,
           user_id: data.user_id,
           profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles,
         }
-        setLocalComments((prev) => [...prev, newComment])
+        setLocalComments((prev) => [...prev, newCommentData])
+
+        // 自分の投稿以外には通知を作成（失敗は無視）
+        if (postOwnerId !== currentUserId) {
+          try {
+            await supabase.from('notifications').insert({
+              user_id: postOwnerId,
+              actor_id: currentUserId,
+              type: 'comment',
+              activity_log_id: activityLogId,
+              comment_id: data.id,
+            })
+          } catch {
+            // 通知作成失敗は無視
+          }
+        }
       }
 
       setNewComment('')
