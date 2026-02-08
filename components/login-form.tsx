@@ -34,11 +34,45 @@ export function LoginForm() {
         if (error) throw error
         alert('確認メールを送信しました。メールをご確認ください。')
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
         if (error) throw error
+
+        // ログイン成功後、名前生成が必要かチェック
+        if (data.session) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', data.user.id)
+              .single()
+
+            const emailPrefix = email.split('@')[0]
+            const needsNameGeneration = profile && (
+              !profile.display_name ||
+              profile.display_name === profile.username ||
+              profile.display_name === emailPrefix
+            )
+
+            if (needsNameGeneration) {
+              // iOSと同じくBearerトークンで名前生成APIを呼び出し
+              await fetch('/api/generate-name', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${data.session.access_token}`,
+                },
+                body: JSON.stringify({ userId: data.user.id }),
+              })
+            }
+          } catch (nameError) {
+            console.error('Name generation error:', nameError)
+            // 名前生成に失敗してもログインは成功とする
+          }
+        }
+
         router.push('/')
         router.refresh()
       }
