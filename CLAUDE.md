@@ -1240,7 +1240,16 @@ iOSネイティブアプリは別リポジトリで開発:
    - [components/ui/progress.tsx](components/ui/progress.tsx) - shadcn/ui Progress コンポーネント追加
    - アップロード中は「画像アップロード中... X/Y」と進捗バーを表示
 
+### 投稿詳細ページ追加 (2026-02-08)
+1. ✅ 投稿詳細ページ
+   - [app/activity-logs/[id]/page.tsx](app/activity-logs/[id]/page.tsx) - 投稿詳細ページを新規作成
+   - URLから直接投稿にアクセス可能（通知からの遷移用）
+   - コメントセクションはデフォルトで展開
+2. ✅ ActivityLogCardの拡張
+   - [components/activity-log-card.tsx](components/activity-log-card.tsx) - `defaultExpandComments` プロパティ追加
+   - 詳細ページではコメントを自動展開
+
 ---
 
 **最終更新**: 2026-02-08
-**更新内容**: 投稿フォーム折りたたみ機能と画像アップロード進捗バーを追加
+**更新内容**: 投稿詳細ページを追加
