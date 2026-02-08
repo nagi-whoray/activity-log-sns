@@ -59,14 +59,17 @@ export function Header({ user, profileName }: HeaderProps) {
                 </Button>
               </div>
 
-              {/* Hamburger button */}
-              <button
-                className="sm:hidden p-2 hover:bg-gray-100 rounded-md transition-colors"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label={isMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
-              >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
+              {/* Mobile: Notification + Hamburger */}
+              <div className="sm:hidden flex items-center gap-2">
+                <NotificationButton />
+                <button
+                  className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  aria-label={isMenuOpen ? 'メニューを閉じる' : 'メニューを開く'}
+                >
+                  {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -84,9 +87,6 @@ export function Header({ user, profileName }: HeaderProps) {
                 マイページ
               </Button>
             </Link>
-            <div className="flex justify-start">
-              <NotificationButton />
-            </div>
             <Button variant="outline" onClick={handleSignOut} className="w-full">
               ログアウト
             </Button>
