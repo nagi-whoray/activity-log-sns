@@ -1114,7 +1114,37 @@ gh pr create --title "機能追加" --body "説明"
    - [app/page.tsx](app/page.tsx) - 終了したルーティンは選択肢に表示しない
    - `.is('ended_at', null)`でフィルタリング
 
+### iOSアプリ連携対応 (2026-02-08)
+1. ✅ APIルートの認証対応
+   - [middleware.ts](middleware.ts) - `/api/`パスをミドルウェアから除外
+   - iOSアプリからのリクエストがミドルウェアをバイパス可能に
+2. ✅ generate-message APIの認証強化
+   - [app/api/generate-message/route.ts](app/api/generate-message/route.ts) - 2種類の認証をサポート
+   - **iOSアプリ**: `Authorization: Bearer <access_token>` ヘッダーで認証
+   - **Webアプリ**: Cookie（セッション）ベースの認証（従来通り）
+   - 未認証リクエストは401エラーを返す
+   - userIdとauthenticatedUserIdの不一致は403エラーを返す
+3. ✅ iOSアプリ側の対応（別リポジトリ: activity-log-sns-ios）
+   - `AIMessageService.swift` - Supabaseセッションからアクセストークンを取得しリクエストに付与
+4. ✅ セキュリティ
+   - APIルートは常に認証必須（iOSはBearer token、WebはCookie）
+   - 他人のuserIdでのリクエストは拒否
+
+---
+
+## iOSアプリについて
+
+iOSネイティブアプリは別リポジトリで開発:
+- **リポジトリ**: `/Users/m0112/activity-log-sns-ios`
+- **技術スタック**: SwiftUI + Supabase Swift SDK
+- **共有リソース**: 同じSupabaseプロジェクト・データベースを使用
+
+### iOS連携API
+| エンドポイント | 認証方法 | 説明 |
+|---------------|---------|------|
+| `/api/generate-message` | Bearer token | AIメッセージ生成 |
+
 ---
 
 **最終更新**: 2026-02-08
-**更新内容**: 投稿カードに活動時間表示機能追加（⏱️ X時間Y分形式）
+**更新内容**: iOSアプリ連携のためのAPI認証対応を追加
