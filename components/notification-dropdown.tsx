@@ -97,9 +97,11 @@ export function NotificationDropdown({ onClose, onMarkRead }: NotificationDropdo
     if (n.type === 'follow') {
       return `/users/${n.actor_id}`
     }
-    // いいね・コメントは投稿者のプロフィールの投稿一覧へ
-    // TODO: 投稿詳細ページがあればそちらへ遷移
-    return n.activity_log_id ? `/users/${n.activity_log?.profiles?.id || n.actor_id}` : '/'
+    // いいね・コメントは投稿詳細ページへ遷移
+    if (n.activity_log_id) {
+      return `/activity-logs/${n.activity_log_id}`
+    }
+    return '/'
   }
 
   const formatDate = (dateString: string) => {
@@ -122,7 +124,7 @@ export function NotificationDropdown({ onClose, onMarkRead }: NotificationDropdo
   return (
     <Card
       ref={dropdownRef}
-      className="absolute right-0 top-full mt-2 w-80 sm:w-96 max-h-[70vh] overflow-hidden z-50 shadow-lg"
+      className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-16 sm:top-full sm:mt-2 w-auto sm:w-96 max-h-[70vh] overflow-hidden z-50 shadow-lg"
     >
       <div className="p-3 border-b flex justify-between items-center sticky top-0 bg-white">
         <h3 className="font-semibold">通知</h3>

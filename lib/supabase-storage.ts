@@ -111,6 +111,28 @@ export async function uploadMultipleImages(
 }
 
 /**
+ * 複数の画像を進捗付きでアップロード
+ */
+export async function uploadMultipleImagesWithProgress(
+  files: File[],
+  userId: string,
+  onProgress: (completed: number, total: number) => void
+): Promise<ImageUploadResult[]> {
+  const total = files.length
+  let completed = 0
+  const results: ImageUploadResult[] = []
+
+  for (const file of files) {
+    const result = await uploadActivityImage(file, userId)
+    results.push(result)
+    completed++
+    onProgress(completed, total)
+  }
+
+  return results
+}
+
+/**
  * 複数の画像を一括削除
  */
 export async function deleteMultipleImages(paths: string[]): Promise<void> {

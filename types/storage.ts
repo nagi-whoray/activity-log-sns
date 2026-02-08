@@ -31,6 +31,6 @@ export const ALLOWED_IMAGE_TYPES: AllowedImageType[] = [
 ]
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-export const MAX_IMAGES_PER_POST = 3
+export const MAX_IMAGES_PER_POST = 5
 
 export const STORAGE_BUCKET = 'activity-images'

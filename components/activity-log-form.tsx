@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ActivityCategory, ACTIVITY_CATEGORY_LABELS, LogType, LOG_TYPE_LABELS, UserRoutine } from '@/types/database'
 import { ImageUpload, ImagePreview } from '@/components/ImageUpload'
-import { uploadMultipleImages } from '@/lib/supabase-storage'
+import { uploadMultipleImagesWithProgress } from '@/lib/supabase-storage'
+import { Progress } from '@/components/ui/progress'
 import { EncouragementModal } from '@/components/encouragement-modal'
 import { RoutineSelector } from '@/components/routine-selector'
+import { ChevronDown, ChevronUp, PenSquare } from 'lucide-react'
 
 function toLocalDateString(date: Date): string {
   const y = date.getFullYear()
@@ -33,6 +35,7 @@ interface ActivityLogFormProps {
 }
 
 export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const [logType, setLogType] = useState<LogType>('activity')
   const [category, setCategory] = useState<ActivityCategory>('workout')
   const [content, setContent] = useState('')
@@ -44,6 +47,7 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
   const [images, setImages] = useState<ImagePreview[]>([])
   const [isImagePrivate, setIsImagePrivate] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ completed: number; total: number } | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [modalMessage, setModalMessage] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -121,8 +125,14 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
         .map((img) => img.compressedFile as File)
 
       if (imagesToUpload.length > 0) {
-        const uploadResults = await uploadMultipleImages(imagesToUpload, user.id)
+        setUploadProgress({ completed: 0, total: imagesToUpload.length })
+        const uploadResults = await uploadMultipleImagesWithProgress(
+          imagesToUpload,
+          user.id,
+          (completed, total) => setUploadProgress({ completed, total })
+        )
         imageUrls = uploadResults.map((result) => result.url)
+        setUploadProgress(null)
       }
 
       const durationMinutes = activityDurationMinutes ? parseInt(activityDurationMinutes, 10) : null
@@ -197,9 +207,26 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{logType === 'activity' ? '活動を記録する' : '達成を記録する'}</CardTitle>
+      <CardHeader
+        className="cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <PenSquare className="w-5 h-5" />
+            {isExpanded
+              ? (logType === 'activity' ? '活動を記録する' : '達成を記録する')
+              : '新しい投稿を作成'
+            }
+          </CardTitle>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          )}
+        </div>
       </CardHeader>
+      {isExpanded && (
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* ログタイプ選択 */}
@@ -369,15 +396,33 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
             </div>
           )}
 
+          {/* アップロード進捗バー */}
+          {uploadProgress && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>画像アップロード中...</span>
+                <span>{uploadProgress.completed}/{uploadProgress.total}</span>
+              </div>
+              <Progress value={(uploadProgress.completed / uploadProgress.total) * 100} />
+            </div>
+          )}
+
           <Button
             type="submit"
             className="w-full"
             disabled={loading || !content.trim() || isCompressing}
           >
-            {loading ? '投稿中...' : isCompressing ? '画像を処理中...' : '投稿する'}
+            {loading
+              ? uploadProgress
+                ? `アップロード中 (${uploadProgress.completed}/${uploadProgress.total})...`
+                : '投稿中...'
+              : isCompressing
+                ? '画像を処理中...'
+                : '投稿する'}
           </Button>
         </form>
       </CardContent>
+      )}
 
       <EncouragementModal
         open={showModal}
