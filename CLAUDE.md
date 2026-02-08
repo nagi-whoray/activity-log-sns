@@ -489,7 +489,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<設定済み>
 ## デプロイメント
 
 ### Vercelデプロイ ✅ 完了
-- **本番URL**: https://activity-log-sns.vercel.app （公開アクセス可能）
+- **本番URL**: https://recowork.jp （公開アクセス可能）
 - **デプロイ日**: 2026-02-06
 - **自動デプロイ**: GitHub mainブランチへのpush時に自動デプロイ
 
@@ -508,9 +508,9 @@ vercel --prod
 
 #### Supabase認証URL設定
 Supabaseダッシュボード > Authentication > URL Configuration で設定:
-- **Site URL**: `https://activity-log-sns.vercel.app`
+- **Site URL**: `https://recowork.jp`
 - **Redirect URLs**:
-  - `https://activity-log-sns.vercel.app/auth/callback` （本番用）
+  - `https://recowork.jp/auth/callback` （本番用）
   - `http://localhost:3000/auth/callback` （ローカル開発用）
 
 ### デプロイチェックリスト
@@ -686,12 +686,12 @@ Supabaseダッシュボード > Authentication > URL Configuration で設定:
    - `vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY`
 5. ✅ 本番デプロイ
    - `vercel --prod` で本番環境にデプロイ
-   - 本番URL: https://activity-log-sns.vercel.app
+   - 本番URL: https://recowork.jp
 6. ✅ GitHub自動デプロイ連携
    - Vercelダッシュボード > Settings > Git でGitHub連携設定
    - mainブランチへのpushで自動デプロイ
 7. ✅ Supabase認証URL設定
-   - Site URL: `https://activity-log-sns.vercel.app`
+   - Site URL: `https://recowork.jp`
    - Redirect URLs: 本番用・ローカル開発用の両方を登録
 
 ### モバイル用ハンバーガーメニュー追加 (2026-02-06)
@@ -998,7 +998,7 @@ gh pr create --title "機能追加" --body "説明"
 
 ### プロジェクト固有のリソース
 - [Vercelダッシュボード](https://vercel.com/nagi-whorays-projects/activity-log-sns)
-- [本番サイト](https://activity-log-sns.vercel.app)
+- [本番サイト](https://recowork.jp)
 - [Supabaseダッシュボード](https://supabase.com/dashboard/project/eryskzojvhzffszreycd)
 - [Supabase Table Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/editor)
 - [Supabase SQL Editor](https://supabase.com/dashboard/project/eryskzojvhzffszreycd/sql)
