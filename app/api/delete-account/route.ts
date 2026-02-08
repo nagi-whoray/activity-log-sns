@@ -4,30 +4,38 @@ import { NextResponse } from 'next/server'
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createClient()
-
     // 認証チェック（iOSアプリからのBearerトークンまたはWebのセッション）
     const authHeader = request.headers.get('Authorization')
+    console.log('🔐 Delete Account - Auth Header present:', !!authHeader)
+    console.log('🔐 Delete Account - Auth Header starts with Bearer:', authHeader?.startsWith('Bearer '))
     let authenticatedUserId: string | null = null
 
     if (authHeader?.startsWith('Bearer ')) {
       // iOSアプリ: Bearerトークンを検証
       const token = authHeader.substring(7)
+      console.log('🔐 Delete Account - Token length:', token.length)
+
+      // トークン検証用にSupabaseクライアントを作成
+      const supabase = await createClient()
       const { data: { user }, error } = await supabase.auth.getUser(token)
 
       if (error || !user) {
+        console.log('🔐 Delete Account - Token verification failed:', error?.message)
         return NextResponse.json(
           { error: '認証に失敗しました' },
           { status: 401 }
         )
       }
 
+      console.log('🔐 Delete Account - Token verified for user:', user.id)
       authenticatedUserId = user.id
     } else {
       // Webアプリ: クッキーベースのセッション
+      const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
+        console.log('🔐 Delete Account - No web session found')
         return NextResponse.json(
           { error: '認証が必要です' },
           { status: 401 }
