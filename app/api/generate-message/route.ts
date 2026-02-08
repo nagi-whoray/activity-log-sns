@@ -47,11 +47,50 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
+    // Check for Authorization header (from iOS app)
+    const authHeader = request.headers.get('Authorization')
+    let authenticatedUserId: string | null = null
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // iOS app: Verify the Bearer token
+      const token = authHeader.substring(7)
+      const { data: { user }, error } = await supabase.auth.getUser(token)
+
+      if (error || !user) {
+        return NextResponse.json(
+          { error: '認証に失敗しました' },
+          { status: 401 }
+        )
+      }
+
+      authenticatedUserId = user.id
+    } else {
+      // Web app: Check cookie-based session
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        return NextResponse.json(
+          { error: '認証が必要です' },
+          { status: 401 }
+        )
+      }
+
+      authenticatedUserId = user.id
+    }
+
+    // Verify that the userId in the request matches the authenticated user
+    if (userId && userId !== authenticatedUserId) {
+      return NextResponse.json(
+        { error: '権限がありません' },
+        { status: 403 }
+      )
+    }
+
     // 過去のアクティビティを取得（最新50件）
     const { data: recentLogs } = await supabase
       .from('activity_logs')
       .select('category, content, log_type, activity_date, ai_message')
-      .eq('user_id', userId)
+      .eq('user_id', authenticatedUserId)
       .order('activity_date', { ascending: false })
       .limit(50)
 
@@ -59,13 +98,13 @@ export async function POST(request: Request) {
     const { data: allLogs } = await supabase
       .from('activity_logs')
       .select('log_type, category, activity_date')
-      .eq('user_id', userId)
+      .eq('user_id', authenticatedUserId)
 
     // ユーザーのAI設定とプロフィールを取得
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('display_name, bio, goal, ai_prompt, ai_tone')
-      .eq('id', userId)
+      .eq('id', authenticatedUserId)
       .single()
 
     // 各種カウントを計算
@@ -157,7 +196,7 @@ ${toneInstruction}`
         .from('activity_logs')
         .update({ ai_message: generatedMessage })
         .eq('id', logId)
-        .eq('user_id', userId)
+        .eq('user_id', authenticatedUserId)
     }
 
     return NextResponse.json({ message: generatedMessage })
