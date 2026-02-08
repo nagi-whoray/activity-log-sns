@@ -89,7 +89,7 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
       // プロフィールが存在するか確認し、なければ自動作成
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, display_name')
         .eq('id', user.id)
         .single()
 
@@ -106,6 +106,18 @@ export function ActivityLogForm({ userRoutines = [] }: ActivityLogFormProps) {
         }
 
         // AIにユーモアのある名前を生成してもらう
+        try {
+          await fetch('/api/generate-name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id }),
+          })
+        } catch (nameError) {
+          console.error('Name generation error:', nameError)
+          // 名前生成に失敗しても続行
+        }
+      } else if (!profile.display_name) {
+        // プロフィールは存在するがdisplay_nameがNULLの場合、名前を生成
         try {
           await fetch('/api/generate-name', {
             method: 'POST',
