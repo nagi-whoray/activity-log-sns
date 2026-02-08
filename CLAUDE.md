@@ -330,9 +330,12 @@ npx shadcn@latest add [component-name]
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=    # アカウント削除機能に必要（サーバーサイド専用）
 ```
 
-**注意**: `NEXT_PUBLIC_`プレフィックスはクライアント側でも使用可能にする
+**注意**:
+- `NEXT_PUBLIC_`プレフィックスはクライアント側でも使用可能にする
+- `SUPABASE_SERVICE_ROLE_KEY`はSupabaseダッシュボードのSettings > API > Project API keysから取得
 
 ### Supabaseの初期設定が必要
 アプリを動作させる前に以下を実施：
@@ -1143,6 +1146,7 @@ iOSネイティブアプリは別リポジトリで開発:
 | エンドポイント | 認証方法 | 説明 |
 |---------------|---------|------|
 | `/api/generate-message` | Bearer token | AIメッセージ生成 |
+| `/api/delete-account` | Bearer token | アカウント削除 |
 
 ### アイテムカードのステータス位置変更 (2026-02-08)
 1. ✅ ステータス表示位置の変更
@@ -1151,7 +1155,21 @@ iOSネイティブアプリは別リポジトリで開発:
    - 変更後: 商品名 → ステータス → 使い方
    - ルーティンカードと同じ表示パターンに統一
 
+### アカウント削除機能追加 (2026-02-08)
+1. ✅ 削除API作成
+   - [app/api/delete-account/route.ts](app/api/delete-account/route.ts) - アカウント削除エンドポイント
+   - 2種類の認証をサポート: Bearer token（iOS）、Cookie session（Web）
+   - 削除対象: Storage画像、いいね、コメント、フォロー関係、投稿、ルーティン、アイテム、プロフィール、Supabase Auth
+   - `SUPABASE_SERVICE_ROLE_KEY`を使用してadmin権限でAuth削除
+2. ✅ プロフィール編集フォームに削除UI追加
+   - [components/profile-edit-form.tsx](components/profile-edit-form.tsx) - 「アカウントを削除」セクション追加
+   - 確認ダイアログ付き（AlertDialog使用）
+   - 削除処理中のローディング表示
+   - 削除完了後、ログインページへリダイレクト
+3. ✅ iOSアプリ対応
+   - iOSアプリからもBearerトークンで同じAPIを呼び出し可能
+
 ---
 
 **最終更新**: 2026-02-08
-**更新内容**: アイテムカードのステータス表示位置をルーティンと統一
+**更新内容**: アカウント削除機能を追加（Web/iOS両対応）
