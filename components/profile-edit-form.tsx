@@ -4,11 +4,20 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import imageCompression from 'browser-image-compression'
-import { ImagePlus, X, Loader2 } from 'lucide-react'
+import { ImagePlus, X, Loader2, Trash2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { uploadProfileImage } from '@/lib/supabase-storage'
 import { ALLOWED_IMAGE_TYPES, AllowedImageType } from '@/types/storage'
@@ -54,6 +63,11 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
   const [cropDialogOpen, setCropDialogOpen] = useState(false)
   const [cropImageSrc, setCropImageSrc] = useState<string>('')
   const [cropType, setCropType] = useState<'avatar' | 'background'>('avatar')
+
+  // アカウント削除用のstate
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const handleImageSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -168,6 +182,30 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
       setError(err instanceof Error ? err.message : '保存に失敗しました')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
+      const response = await fetch('/api/delete-account', {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'アカウントの削除に失敗しました')
+      }
+
+      // 削除成功 - ログインページへリダイレクト
+      router.push('/login')
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'アカウントの削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -408,6 +446,79 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
             キャンセル
           </Button>
         </div>
+
+        {/* アカウント削除 */}
+        <Card className="border-red-200">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-medium text-red-600">アカウントを削除</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  アカウントを削除すると、すべての投稿、コメント、いいね、フォロー関係、ルーティン、アイテムが完全に削除されます。この操作は取り消せません。
+                </p>
+                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="mt-3 gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      アカウントを削除
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="w-5 h-5" />
+                        アカウントを削除しますか？
+                      </DialogTitle>
+                      <DialogDescription className="pt-2">
+                        この操作は取り消せません。以下のデータがすべて削除されます：
+                        <ul className="mt-2 ml-4 list-disc text-left">
+                          <li>プロフィール情報</li>
+                          <li>すべての投稿と画像</li>
+                          <li>コメント・いいね</li>
+                          <li>フォロー・フォロワー関係</li>
+                          <li>ルーティン・アイテム</li>
+                        </ul>
+                      </DialogDescription>
+                    </DialogHeader>
+                    {deleteError && (
+                      <p className="text-sm text-red-500">{deleteError}</p>
+                    )}
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setDeleteDialogOpen(false)}
+                        disabled={isDeleting}
+                      >
+                        キャンセル
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            削除中...
+                          </>
+                        ) : (
+                          '削除する'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </form>
 
       {/* クロップダイアログ */}
