@@ -86,13 +86,13 @@ export async function POST(request: Request) {
       )
     }
 
-    // 過去のアクティビティを取得（最新50件）
+    // 過去のアクティビティを取得（最新10件）
     const { data: recentLogs } = await supabase
       .from('activity_logs')
       .select('category, content, log_type, activity_date, ai_message')
       .eq('user_id', authenticatedUserId)
       .order('activity_date', { ascending: false })
-      .limit(50)
+      .limit(10)
 
     // 統計情報を取得
     const { data: allLogs } = await supabase
@@ -117,6 +117,11 @@ export async function POST(request: Request) {
     const activityDates = allLogs?.map(log => log.activity_date) || []
     const streak = calculateStreak(activityDates)
 
+    // streak が2以上のときだけ統計に含める（「1日連続」は不自然なため除外）
+    const streakLine = streak >= 2
+      ? `- 連続活動日数: ${streak}日（この数値は正確です。そのまま使ってください）\n`
+      : ''
+
     const categoryLabel = CATEGORY_LABELS[category] || category
 
     // 今回が何回目かを計算（今回の投稿を含む）
@@ -124,14 +129,19 @@ export async function POST(request: Request) {
       ? categoryAchievementCount + 1
       : categoryActivityCount + 1
 
-    // コンパクトなデータ形式に変換（AIがパターン分析しやすい形式）
+    // パターン分析用のコンパクトなログ（AIメッセージは別管理）
     const compactLogs = recentLogs?.map(log => ({
       d: log.activity_date,
       c: log.category,
       t: log.log_type,
-      s: log.content.substring(0, 50),
-      m: log.ai_message?.substring(0, 80) || ''
+      s: log.content.substring(0, 30),
     })) || []
+
+    // 重複回避用：直近5件のAIメッセージのみ抽出
+    const recentAiMessages = recentLogs
+      ?.filter(log => log.ai_message)
+      .slice(0, 5)
+      .map(log => log.ai_message!.substring(0, 60)) || []
 
     // ユーザープロフィール情報を組み立て
     const profileInfo = []
@@ -152,39 +162,81 @@ export async function POST(request: Request) {
       ? `- 口調・スタイル: ${userProfile.ai_tone}`
       : '- フレンドリーな口調'
 
-    // Claude APIでメッセージ生成（最速モデルを使用）
-    const client = new Anthropic()
-    const message = await client.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 300,
-      messages: [{
-        role: 'user',
-        content: `あなたはフィットネス・学習・美容のアクティビティログSNSのAIアシスタントです。
-ユーザーが${logType === 'achievement' ? '達成' : '活動'}を記録しました。
+    // 統計ブロック：カテゴリ別と全体を明確に分離
+    const statisticsBlock = `【今回の${categoryLabel}に関する統計】
+- 今回は${categoryLabel}の${logType === 'achievement' ? '達成' : '活動'}記録で、通算${currentCount}回目です
+${streakLine}
+【全カテゴリの累計統計（参考情報・今回の記録には直接関係なし）】
+- 全カテゴリ合計の活動ログ数: ${totalActivityCount}件
+- 全カテゴリ合計の達成ログ数: ${totalAchievementCount}件`
+
+    // 履歴をテキストテーブル形式に変換（JSONより読みやすい）
+    const compactLogsFormatted = compactLogs.length > 0
+      ? compactLogs.map(log =>
+          `${log.d} | ${CATEGORY_LABELS[log.c] || log.c} | ${log.t === 'achievement' ? '達成' : '活動'} | ${log.s}`
+        ).join('\n')
+      : 'まだ過去の記録はありません'
+
+    const recentAiMessagesFormatted = recentAiMessages.length > 0
+      ? `\n【直近のAIメッセージ（同じ表現を避けること）】\n${recentAiMessages.map((m, i) => `${i + 1}. ${m}`).join('\n')}`
+      : ''
+
+    // システムプロンプト：役割定義・厳守ルール・禁止事項
+    const systemPrompt = `あなたは活動記録SNSアプリの励ましAIアシスタントです。ユーザーが活動や達成を記録したとき、パーソナライズされた短い励ましメッセージを生成します。
+
+## あなたの役割
+- ユーザーの活動を認め、称え、継続を励ます
+- 統計データを正確に引用する
+- 2〜3文で簡潔に応答する
+- 日本語で記述し、絵文字を適度に使用する
+${toneInstruction}
+
+## 厳守すべきルール
+
+### 数値の正確性
+- 「今回の記録に関する統計」セクションの数値のみを、今回の活動に言及する際に使用すること
+- 「全カテゴリの累計統計」の数値は、今回の特定カテゴリの回数としては絶対に使わないこと
+- 例：筋トレが「通算5回目」と記載されているなら「5回目」と言うこと。全カテゴリ合計の活動ログ数が20件でも「20回目の筋トレ」とは絶対に言わないこと
+
+### 連続日数について
+- 連続活動日数が統計に含まれている場合のみ言及してよい
+- 統計に連続活動日数が記載されていない場合、連続日数には一切触れないこと
+- 「1日連続」という表現は日本語として不自然なので絶対に使わないこと
+
+### 表現の多様性
+- 直近のAIメッセージが提示されている場合、それらと同じフレーズや構文パターンを避けること
+- 毎回異なる切り口で励ますこと（数値、習慣パターン、具体的な内容への共感など）
+
+### 禁止事項
+- ユーザーが記入していない情報を捏造しない
+- 統計データを独自に計算・推測しない（提示された数値をそのまま使う）
+- 3文を超えない
+- 「連続」という言葉を、統計に連続日数の記載がないのに使わない`
+
+    // ユーザープロンプト：リクエストごとの動的データ
+    const userPrompt = `ユーザーが${logType === 'achievement' ? '達成' : '活動'}を記録しました。励ましメッセージを生成してください。
 ${userProfileContext}${userContext}
 【今回の記録】
 カテゴリ: ${categoryLabel}
 内容: ${content}
 タイプ: ${logType === 'achievement' ? '達成ログ' : '活動ログ'}${activityDurationMinutes ? `\n活動時間: ${activityDurationMinutes}分` : ''}
 
-【確定した統計（サーバー計算済み）】
-- 連続活動日数: ${streak}日
-- ${categoryLabel}の${logType === 'achievement' ? '達成' : '活動'}記録: 今回で${currentCount}回目
-- 総活動ログ数: ${totalActivityCount}件
-- 総達成ログ数: ${totalAchievementCount}件
+${statisticsBlock}
 
-【過去の活動履歴 (JSON形式、最新順、d=日付, c=カテゴリ, t=タイプ, s=内容, m=過去のAIメッセージ)】
-${JSON.stringify(compactLogs)}
+【最近の活動パターン（参考）】
+${compactLogsFormatted}${recentAiMessagesFormatted}
 
-上記の統計情報と活動履歴を参考に、パーソナライズされた励ましのメッセージを2-3文で生成してください。
+${logType === 'achievement' ? 'この達成を祝福し次の目標に向けて励ます' : 'この活動を称え継続を励ます'}メッセージを2〜3文で生成してください。メッセージ本文のみ出力してください。`
 
-要件:
-- 上記の統計数値をそのまま使用すること
-- 活動履歴から週間習慣やカテゴリ傾向を見つけて言及（例：「週3回ペースで筋トレ」「最近は勉強に力を入れている」など）
-- ${logType === 'achievement' ? 'この達成を祝福し、次の目標に向けて励ます' : 'この活動を称え、継続を励ます'}
-- 過去のAIメッセージ(m)と同じ表現・フレーズを繰り返さない。新鮮で多様な言い回しを使う
-- 日本語で記述、絵文字を適度に使用
-${toneInstruction}`
+    // Claude APIでメッセージ生成
+    const client = new Anthropic()
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 250,
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: userPrompt
       }]
     })
 
