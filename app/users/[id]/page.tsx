@@ -105,6 +105,10 @@ export default async function UserProfilePage({
           username,
           display_name,
           avatar_url
+        ),
+        comment_likes (
+          id,
+          user_id
         )
       ),
       routine:user_routines (

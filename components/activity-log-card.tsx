@@ -68,6 +68,10 @@ export interface ActivityLogData {
       display_name: string | null
       avatar_url: string | null
     } | null
+    comment_likes: {
+      id: string
+      user_id: string
+    }[]
   }[]
 }
 

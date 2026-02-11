@@ -70,6 +70,10 @@ export async function GET(request: NextRequest) {
           username,
           display_name,
           avatar_url
+        ),
+        comment_likes (
+          id,
+          user_id
         )
       ),
       routine:user_routines (

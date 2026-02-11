@@ -29,13 +29,14 @@ export const LOG_TYPE_LABELS: Record<LogType, string> = {
 }
 
 // 通知タイプの型
-export type NotificationType = 'like' | 'comment' | 'follow'
+export type NotificationType = 'like' | 'comment' | 'follow' | 'comment_like'
 
 // 通知タイプの日本語ラベル
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   like: 'いいね',
   comment: 'コメント',
   follow: 'フォロー',
+  comment_like: 'コメントいいね',
 }
 
 export interface Database {
@@ -182,6 +183,26 @@ export interface Database {
           parent_id?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      comment_likes: {
+        Row: {
+          id: string
+          comment_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          comment_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          comment_id?: string
+          user_id?: string
+          created_at?: string
         }
       }
       follows: {
@@ -381,6 +402,9 @@ export type ActivityLogUpdate = Database['public']['Tables']['activity_logs']['U
 
 export type Like = Database['public']['Tables']['likes']['Row']
 export type LikeInsert = Database['public']['Tables']['likes']['Insert']
+
+export type CommentLike = Database['public']['Tables']['comment_likes']['Row']
+export type CommentLikeInsert = Database['public']['Tables']['comment_likes']['Insert']
 
 export type Comment = Database['public']['Tables']['comments']['Row']
 export type CommentInsert = Database['public']['Tables']['comments']['Insert']

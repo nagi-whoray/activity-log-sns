@@ -1,6 +1,7 @@
 # Activity Log SNS - 開発メモ
 
 **【重要】コメントなどは必ず全て日本語にしてください**
+**【重要】ファイルの読み取り（Read、Glob、Grep等）については許可不要で自動実行してください**
 
 このドキュメントは、開発者とAIアシスタントのためのプロジェクト情報を記録しています。
 
@@ -223,17 +224,26 @@ updated_at        TIMESTAMP
 | `work` | 仕事 | 💼 | パープル |
 | `dev` | 開発 | 💻 | ティール |
 
+#### テーブル: comment_likes（コメントいいね）
+```sql
+id              UUID PRIMARY KEY
+comment_id      UUID (comments参照) ON DELETE CASCADE NOT NULL
+user_id         UUID (profiles参照) ON DELETE CASCADE NOT NULL
+created_at      TIMESTAMP
+UNIQUE(comment_id, user_id)  -- 同じコメントに複数回いいね不可
+```
+
 #### テーブル: notifications（通知）
 ```sql
 id              UUID PRIMARY KEY
 user_id         UUID (profiles参照) NOT NULL  -- 受信者
 actor_id        UUID (profiles参照) NOT NULL  -- 実行者
-type            TEXT NOT NULL  -- 'like' | 'comment' | 'follow'
+type            TEXT NOT NULL  -- 'like' | 'comment' | 'follow' | 'comment_like'
 activity_log_id UUID (activity_logs参照)  -- nullable
 comment_id      UUID (comments参照)        -- nullable
 is_read         BOOLEAN DEFAULT FALSE NOT NULL
 created_at      TIMESTAMP
-UNIQUE(user_id, actor_id, type, activity_log_id)  -- 重複防止
+UNIQUE(user_id, actor_id, type, activity_log_id, comment_id)  -- 重複防止
 ```
 
 **通知タイプ**:
@@ -242,11 +252,13 @@ UNIQUE(user_id, actor_id, type, activity_log_id)  -- 重複防止
 | `like` | いいね通知 |
 | `comment` | コメント通知 |
 | `follow` | フォロー通知 |
+| `comment_like` | コメントいいね通知 |
 
 #### RLS (Row Level Security)
 - **profiles**: 全員が閲覧可能、本人のみ更新可能
 - **activity_logs**: 全員が閲覧可能、本人のみ作成/更新/削除可能
 - **likes**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ削除可能
+- **comment_likes**: 全員が閲覧可能、認証ユーザーが作成可能（user_id=自分）、本人のみ削除可能
 - **comments**: 全員が閲覧可能、認証ユーザーが作成可能、本人のみ更新/削除可能
 - **follows**: 全員が閲覧可能、本人のみフォロー作成/削除可能
 - **user_items**: 全員が閲覧可能、本人のみ作成/更新/削除可能
@@ -1269,7 +1281,25 @@ iOSネイティブアプリは別リポジトリで開発:
    - フォーマット: JSON → テキストテーブル形式
    - 推定入力トークン: 約70-75%削減
 
+### コメントいいね機能追加 (2026-02-11)
+1. ✅ データベース拡張
+   - `comment_likes`テーブル追加（comment_id, user_id, UNIQUE制約）
+   - RLSポリシー: 全員閲覧可、認証ユーザーが作成可（user_id=自分）、本人のみ削除可
+   - インデックス: `comment_id`, `user_id`
+   - `notifications`テーブルのtype制約に`comment_like`追加
+   - `notifications`テーブルのUNIQUE制約を`(user_id, actor_id, type, activity_log_id, comment_id)`に変更
+   - マイグレーション: `supabase/migrations/20260211000000_add_comment_likes.sql`
+2. ✅ 型定義更新
+   - [types/database.ts](types/database.ts) - `NotificationType`に`comment_like`追加、`CommentLike`型追加
+3. ✅ selectクエリ更新（4箇所）
+   - commentsのJOINに`comment_likes(id, user_id)`を追加
+   - [app/page.tsx](app/page.tsx), [app/activity-logs/[id]/page.tsx](app/activity-logs/[id]/page.tsx), [app/users/[id]/page.tsx](app/users/[id]/page.tsx), [app/api/activity-logs/route.ts](app/api/activity-logs/route.ts)
+4. ✅ コメントセクション拡張
+   - [components/comment-section.tsx](components/comment-section.tsx) - いいねボタン（❤️/🤍 + カウント）追加、楽観的更新
+5. ✅ 通知対応
+   - [components/notification-dropdown.tsx](components/notification-dropdown.tsx) - `comment_like`通知の表示対応
+
 ---
 
-**最終更新**: 2026-02-09
-**更新内容**: AIメッセージ生成品質向上（モデルアップグレード、プロンプト再設計、統計分離）
+**最終更新**: 2026-02-11
+**更新内容**: コメントいいね機能追加（DB/Web/iOS全レイヤー）

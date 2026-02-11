@@ -8,6 +8,11 @@ import { createClient } from '@/lib/supabase/client'
 import { LinkifiedText } from '@/components/LinkifiedText'
 import { OgpPreviewList } from '@/components/OgpPreviewList'
 
+interface CommentLike {
+  id: string
+  user_id: string
+}
+
 interface Comment {
   id: string
   content: string
@@ -19,6 +24,7 @@ interface Comment {
     display_name: string | null
     avatar_url: string | null
   } | null
+  comment_likes: CommentLike[]
 }
 
 interface CommentSectionProps {
@@ -78,6 +84,7 @@ export function CommentSection({
           created_at: data.created_at,
           user_id: data.user_id,
           profiles: Array.isArray(data.profiles) ? data.profiles[0] : data.profiles,
+          comment_likes: [],
         }
         setLocalComments((prev) => [...prev, newCommentData])
 
@@ -137,6 +144,74 @@ export function CommentSection({
     }
   }
 
+  const handleToggleCommentLike = async (commentId: string, commentOwnerId: string) => {
+    if (!currentUserId) return
+
+    const comment = localComments.find(c => c.id === commentId)
+    if (!comment) return
+
+    const isLiked = comment.comment_likes.some(cl => cl.user_id === currentUserId)
+
+    // 楽観的更新
+    setLocalComments(prev => prev.map(c => {
+      if (c.id !== commentId) return c
+      if (isLiked) {
+        return { ...c, comment_likes: c.comment_likes.filter(cl => cl.user_id !== currentUserId) }
+      } else {
+        return { ...c, comment_likes: [...c.comment_likes, { id: 'temp', user_id: currentUserId }] }
+      }
+    }))
+
+    try {
+      if (isLiked) {
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('user_id', currentUserId)
+        if (error) throw error
+
+        // 通知削除
+        try {
+          await supabase
+            .from('notifications')
+            .delete()
+            .eq('actor_id', currentUserId)
+            .eq('comment_id', commentId)
+            .eq('type', 'comment_like')
+        } catch { /* 無視 */ }
+      } else {
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({ comment_id: commentId, user_id: currentUserId })
+        if (error) throw error
+
+        // 自分のコメント以外には通知作成
+        if (commentOwnerId !== currentUserId) {
+          try {
+            await supabase.from('notifications').insert({
+              user_id: commentOwnerId,
+              actor_id: currentUserId,
+              type: 'comment_like',
+              activity_log_id: activityLogId,
+              comment_id: commentId,
+            })
+          } catch { /* 無視 */ }
+        }
+      }
+    } catch {
+      // ロールバック
+      setLocalComments(prev => prev.map(c => {
+        if (c.id !== commentId) return c
+        if (isLiked) {
+          return { ...c, comment_likes: [...c.comment_likes, { id: 'temp', user_id: currentUserId }] }
+        } else {
+          return { ...c, comment_likes: c.comment_likes.filter(cl => cl.user_id !== currentUserId) }
+        }
+      }))
+    }
+  }
+
   return (
     <div className="space-y-3 pt-3 border-t">
       {/* コメント一覧 */}
@@ -148,6 +223,8 @@ export function CommentSection({
               comment.profiles?.username ||
               'Unknown User'
             const isOwner = comment.user_id === currentUserId
+            const isLiked = currentUserId ? comment.comment_likes.some(cl => cl.user_id === currentUserId) : false
+            const likeCount = comment.comment_likes.length
 
             return (
               <div
@@ -193,6 +270,25 @@ export function CommentSection({
                     <LinkifiedText text={comment.content} />
                   </p>
                   <OgpPreviewList content={comment.content} maxPreviews={1} />
+                  {/* コメントいいねボタン */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <button
+                      onClick={() => handleToggleCommentLike(comment.id, comment.user_id)}
+                      className={`text-xs transition-colors ${
+                        isLiked
+                          ? 'text-red-500'
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      disabled={!currentUserId}
+                    >
+                      {isLiked ? '❤️' : '🤍'}
+                    </button>
+                    {likeCount > 0 && (
+                      <span className={`text-xs ${isLiked ? 'text-red-500' : 'text-gray-500'}`}>
+                        {likeCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )

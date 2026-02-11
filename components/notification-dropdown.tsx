@@ -17,6 +17,7 @@ const notificationIcons: Record<NotificationType, React.ReactNode> = {
   like: <Heart className="w-4 h-4 text-red-500" />,
   comment: <MessageCircle className="w-4 h-4 text-blue-500" />,
   follow: <UserPlus className="w-4 h-4 text-purple-500" />,
+  comment_like: <Heart className="w-4 h-4 text-pink-400" />,
 }
 
 export function NotificationDropdown({ onClose, onMarkRead }: NotificationDropdownProps) {
@@ -90,6 +91,8 @@ export function NotificationDropdown({ onClose, onMarkRead }: NotificationDropdo
         return `${actorName}さんがあなたの投稿にコメントしました`
       case 'follow':
         return `${actorName}さんがあなたをフォローしました`
+      case 'comment_like':
+        return `${actorName}さんがあなたのコメントにいいねしました`
     }
   }
 
