@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "RecoWork - 日々頑張る人たちのSNS",
+  title: "Recowork - 日々頑張る人たちのSNS",
   description: "日々の頑張りを共有して、みんなで継続的に頑張っていくためのSNS",
 };
 
