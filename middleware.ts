@@ -32,8 +32,12 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 未認証の場合、ログインページにリダイレクト
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  // 未認証の場合、ログインページにリダイレクト（利用規約・プライバシーポリシーは公開）
+  if (!user
+    && !request.nextUrl.pathname.startsWith('/login')
+    && !request.nextUrl.pathname.startsWith('/terms')
+    && !request.nextUrl.pathname.startsWith('/privacy')
+  ) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

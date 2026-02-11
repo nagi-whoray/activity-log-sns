@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function LoginForm() {
@@ -14,6 +15,7 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSignUp, setIsSignUp] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -126,14 +128,30 @@ export function LoginForm() {
               minLength={6}
             />
           </div>
+          {isSignUp && (
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="terms"
+                checked={agreedToTerms}
+                onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                disabled={loading}
+              />
+              <label htmlFor="terms" className="text-sm leading-relaxed cursor-pointer">
+                <a href="/terms" target="_blank" className="text-blue-600 underline hover:text-blue-800">利用規約</a>
+                および
+                <a href="/privacy" target="_blank" className="text-blue-600 underline hover:text-blue-800">プライバシーポリシー</a>
+                に同意する
+              </label>
+            </div>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || (isSignUp && !agreedToTerms)}>
             {loading ? '処理中...' : isSignUp ? 'アカウント登録' : 'ログイン'}
           </Button>
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => { setIsSignUp(!isSignUp); setAgreedToTerms(false) }}
             className="text-sm text-muted-foreground hover:text-foreground"
             disabled={loading}
           >
