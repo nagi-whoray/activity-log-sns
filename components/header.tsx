@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
@@ -32,8 +33,9 @@ export function Header({ user, profileName }: HeaderProps) {
       <div className="container mx-auto max-w-2xl px-4 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
-              Recowork
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Image src="/recowork-logo.png" alt="Recowork" width={28} height={28} />
+              <span className="text-xl font-bold">Recowork</span>
             </Link>
             {user && profileName && (
               <p className="text-sm text-muted-foreground">{profileName}</p>

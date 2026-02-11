@@ -72,17 +72,25 @@ export async function POST(request: Request) {
       : '名無しさん'
 
     // 生成した名前をプロフィールに保存（認証済みユーザーのIDを使用）
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ display_name: generatedName })
-      .eq('id', authenticatedUserId)
+    // まずupdateを試み、プロフィールが存在しない場合はリトライ
+    let saved = false
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ display_name: generatedName })
+        .eq('id', authenticatedUserId)
 
-    if (updateError) {
-      console.error('Profile update error:', updateError)
-      return NextResponse.json({ name: generatedName, saved: false })
+      if (updateError) {
+        console.error(`Profile update error (attempt ${attempt + 1}):`, updateError)
+      } else {
+        saved = true
+        break
+      }
+      // DBトリガーによるプロフィール作成を待つ
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
-    return NextResponse.json({ name: generatedName, saved: true })
+    return NextResponse.json({ name: generatedName, saved })
   } catch (error) {
     console.error('Name generation error:', error)
     return NextResponse.json(

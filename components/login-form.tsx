@@ -16,6 +16,8 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [isSignUp, setIsSignUp] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -23,9 +25,11 @@ export function LoginForm() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccessMessage(null)
 
     try {
       if (isSignUp) {
+        setLoadingMessage('アカウントを作成中...')
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -34,8 +38,13 @@ export function LoginForm() {
           },
         })
         if (error) throw error
-        alert('確認メールを送信しました。メールをご確認ください。')
+        // 登録成功 → ログイン画面に切り替え
+        setIsSignUp(false)
+        setAgreedToTerms(false)
+        setSuccessMessage('確認メールを送信しました。メールを確認後、ログインしてください。')
+        setPassword('')
       } else {
+        setLoadingMessage('ログイン中...')
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -45,14 +54,25 @@ export function LoginForm() {
         // ログイン成功後、名前生成が必要かチェック
         if (data.session) {
           try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('display_name, username')
-              .eq('id', data.user.id)
-              .single()
+            // プロフィールが作成されるまで少し待つ（新規ユーザーの場合DBトリガーのタイミング）
+            let profile = null
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('display_name, username')
+                .eq('id', data.user.id)
+                .single()
+
+              if (profileData) {
+                profile = profileData
+                break
+              }
+              // プロフィールが見つからない場合、少し待ってリトライ
+              await new Promise(resolve => setTimeout(resolve, 1000))
+            }
 
             const emailPrefix = email.split('@')[0]
-            const needsNameGeneration = profile && (
+            const needsNameGeneration = !profile || (
               !profile.display_name ||
               profile.display_name === profile.username ||
               profile.display_name === emailPrefix
@@ -83,26 +103,42 @@ export function LoginForm() {
       setError(message)
     } finally {
       setLoading(false)
+      setLoadingMessage(null)
     }
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isSignUp ? 'アカウント登録' : 'ログイン'}</CardTitle>
-        <CardDescription>
-          {isSignUp
-            ? 'メールアドレスとパスワードでアカウントを作成'
-            : 'メールアドレスとパスワードでログイン'}
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
-              {error}
-            </div>
-          )}
+    <div className="relative">
+      {/* 処理中オーバーレイ */}
+      {loading && loadingMessage && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 rounded-lg">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+            <p className="text-sm font-medium text-gray-700">{loadingMessage}</p>
+          </div>
+        </div>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>{isSignUp ? 'アカウント登録' : 'ログイン'}</CardTitle>
+          <CardDescription>
+            {isSignUp
+              ? 'メールアドレスとパスワードでアカウントを作成'
+              : 'メールアドレスとパスワードでログイン'}
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {successMessage && (
+              <div className="bg-green-50 text-green-700 text-sm p-3 rounded-md">
+                {successMessage}
+              </div>
+            )}
+            {error && (
+              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+                {error}
+              </div>
+            )}
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <Input
@@ -151,7 +187,7 @@ export function LoginForm() {
           </Button>
           <button
             type="button"
-            onClick={() => { setIsSignUp(!isSignUp); setAgreedToTerms(false) }}
+            onClick={() => { setIsSignUp(!isSignUp); setAgreedToTerms(false); setSuccessMessage(null); setError(null) }}
             className="text-sm text-muted-foreground hover:text-foreground"
             disabled={loading}
           >
@@ -162,5 +198,6 @@ export function LoginForm() {
         </CardFooter>
       </form>
     </Card>
+    </div>
   )
 }

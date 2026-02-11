@@ -22,17 +22,28 @@ export async function GET(request: Request) {
         console.log('🔐 Auth Callback - User ID:', user?.id)
 
         if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name, username')
-            .eq('id', user.id)
-            .single()
+          // プロフィールが作成されるまでリトライ（DBトリガーのタイミング対策）
+          let profile = null
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('display_name, username')
+              .eq('id', user.id)
+              .single()
+
+            if (profileData) {
+              profile = profileData
+              break
+            }
+            console.log(`🔐 Auth Callback - Profile not found, retry ${attempt + 1}/3`)
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
 
           console.log('🔐 Auth Callback - Profile:', JSON.stringify(profile))
 
-          // display_nameがNULL、またはusername(メールプレフィックス)と同じ場合は名前を生成
+          // display_nameがNULL、プロフィール未取得、またはusername(メールプレフィックス)と同じ場合は名前を生成
           const emailPrefix = user.email?.split('@')[0]
-          const needsNameGeneration = profile && (
+          const needsNameGeneration = !profile || (
             !profile.display_name ||
             profile.display_name === profile.username ||
             profile.display_name === emailPrefix

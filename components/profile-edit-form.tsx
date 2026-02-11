@@ -176,6 +176,30 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
 
       if (updateError) throw updateError
 
+      // 名前が空の場合、AIで自動生成する
+      if (!displayName.trim()) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            const nameRes = await fetch('/api/generate-name', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ userId: profile.id }),
+            })
+            const nameData = await nameRes.json()
+            if (nameData.name && nameData.saved) {
+              console.log('AI generated name:', nameData.name)
+            }
+          }
+        } catch (nameError) {
+          console.error('Name regeneration error:', nameError)
+          // 名前生成に失敗しても保存は成功とする
+        }
+      }
+
       router.push(`/users/${profile.id}`)
       router.refresh()
     } catch (err) {
@@ -213,6 +237,15 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
 
   return (
     <>
+      {/* 保存中オーバーレイ */}
+      {isSubmitting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-white/90 backdrop-blur-sm px-8 py-6 shadow-lg">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+            <p className="text-sm font-medium text-gray-700">保存中...</p>
+          </div>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 背景画像 */}
         <Card>

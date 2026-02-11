@@ -314,7 +314,7 @@ UNIQUE(user_id, actor_id, type, activity_log_id, comment_id)  -- 重複防止
 **機能:**
 - 画像形式: JPEG, PNG, GIF, WebP
 - 最大ファイルサイズ: 5MB（活動ログ画像）/ 制限なし（プロフィール画像、圧縮で対応）
-- 最大枚数: 3枚/投稿
+- 最大枚数: 5枚/投稿
 - クライアント側圧縮: browser-image-compression使用（1MB以下、1920px以下）
 - 画像URLはJSON配列として `activity_logs.image_url` に保存
 - **公開/非公開設定**: 画像添付時に公開（🌐）または非公開（🔒）を選択可能
@@ -1338,7 +1338,34 @@ iOSネイティブアプリは別リポジトリで開発:
    - 未同意では登録ボタンが無効
    - リンクは新しいタブで利用規約・プライバシーポリシーを開く
 
+### ヘッダーロゴ追加 (2026-02-11)
+1. ✅ ヘッダーにロゴ画像追加
+   - [components/header.tsx](components/header.tsx) - `Image`コンポーネントでRecoworkロゴ（28x28）を追加
+   - 利用規約・プライバシーポリシーページのヘッダーと統一されたデザイン
+
+### 登録UX改善 (2026-02-11)
+1. ✅ アカウント登録後の自動画面切り替え
+   - [components/login-form.tsx](components/login-form.tsx) - 登録成功後にログイン画面へ自動遷移
+   - 確認メール送信メッセージを緑色バナーで表示
+2. ✅ 処理中オーバーレイ
+   - ログイン/登録ボタン押下時に処理中スピナー表示
+   - 「ログイン中...」「アカウントを作成中...」のメッセージ表示
+
+### 名前生成バグ修正 (2026-02-11)
+1. ✅ 初回ログイン時の名前生成失敗を修正
+   - [components/login-form.tsx](components/login-form.tsx) - プロフィール取得にリトライロジック追加（最大3回、1秒間隔）
+   - [app/auth/callback/route.ts](app/auth/callback/route.ts) - 同様のリトライロジック追加
+   - プロフィール未取得時も名前生成を実行するように条件を`!profile || (...)`に変更
+2. ✅ generate-name APIのリトライ強化
+   - [app/api/generate-name/route.ts](app/api/generate-name/route.ts) - プロフィール更新を最大3回リトライ（DBトリガーのタイミング対策）
+3. ✅ プロフィール編集で名前を空にした場合の即座再生成
+   - [components/profile-edit-form.tsx](components/profile-edit-form.tsx) - 空の名前で保存後、即座に`/api/generate-name`を呼び出しAI名前生成を実行
+
+### プロフィール編集UX改善 (2026-02-11)
+1. ✅ 保存中オーバーレイ
+   - [components/profile-edit-form.tsx](components/profile-edit-form.tsx) - 保存ボタン押下からマイページ遷移まで、全画面オーバーレイ（スピナー + 「保存中...」）を表示
+
 ---
 
 **最終更新**: 2026-02-11
-**更新内容**: 利用規約・プライバシーポリシーページ追加、登録時同意フロー
+**更新内容**: ヘッダーロゴ、登録UX改善、名前生成バグ修正、プロフィール編集UX改善
