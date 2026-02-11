@@ -1324,7 +1324,21 @@ iOSネイティブアプリは別リポジトリで開発:
    - サブタイトル: `日々頑張る人たちのSNS`
    - iOS版と同一のデザイン・メッセージに統一
 
+### 利用規約・プライバシーポリシーページ追加 (2026-02-11)
+1. ✅ 利用規約ページ
+   - [app/terms/page.tsx](app/terms/page.tsx) - 公開ページ（認証不要）
+   - docxの内容をJSXで構造化表示
+2. ✅ プライバシーポリシーページ
+   - [app/privacy/page.tsx](app/privacy/page.tsx) - 公開ページ（認証不要）
+3. ✅ ミドルウェア更新
+   - [middleware.ts](middleware.ts) - `/terms`, `/privacy`を認証不要の公開ルートに追加
+4. ✅ 登録時同意フロー
+   - [components/login-form.tsx](components/login-form.tsx) - アカウント登録時に同意チェックボックス表示
+   - [components/ui/checkbox.tsx](components/ui/checkbox.tsx) - shadcn/ui Checkbox追加
+   - 未同意では登録ボタンが無効
+   - リンクは新しいタブで利用規約・プライバシーポリシーを開く
+
 ---
 
 **最終更新**: 2026-02-11
-**更新内容**: ログイン画面にロゴ画像・ブランディングテキスト追加
+**更新内容**: 利用規約・プライバシーポリシーページ追加、登録時同意フロー
