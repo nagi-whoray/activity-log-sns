@@ -1315,7 +1315,16 @@ iOSネイティブアプリは別リポジトリで開発:
 5. ✅ 通知対応
    - [components/notification-dropdown.tsx](components/notification-dropdown.tsx) - `comment_like`通知の表示対応
 
+### ログイン画面ブランディング (2026-02-11)
+1. ✅ ログインページにロゴ画像追加
+   - `public/recowork-logo.png`（透過背景ロゴ）を配置
+   - [app/login/page.tsx](app/login/page.tsx) - Next.js `Image`コンポーネントでロゴ表示（120x120）
+2. ✅ ログイン画面テキスト統一
+   - アプリ名: `Recowork`
+   - サブタイトル: `日々頑張る人たちのSNS`
+   - iOS版と同一のデザイン・メッセージに統一
+
 ---
 
 **最終更新**: 2026-02-11
-**更新内容**: コメントいいね機能追加（DB/Web/iOS全レイヤー）
+**更新内容**: ログイン画面にロゴ画像・ブランディングテキスト追加
