@@ -204,7 +204,6 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : '保存に失敗しました')
-    } finally {
       setIsSubmitting(false)
     }
   }

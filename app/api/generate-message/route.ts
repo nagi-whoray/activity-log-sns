@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropicClient } from '@/lib/anthropic'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -229,7 +229,7 @@ ${compactLogsFormatted}${recentAiMessagesFormatted}
 ${logType === 'achievement' ? 'この達成を祝福し次の目標に向けて励ます' : 'この活動を称え継続を励ます'}メッセージを2〜3文で生成してください。メッセージ本文のみ出力してください。`
 
     // Claude APIでメッセージ生成
-    const client = new Anthropic()
+    const client = createAnthropicClient()
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 250,

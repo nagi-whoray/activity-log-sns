@@ -1,23 +1,28 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { createAnthropicClient } from '@/lib/anthropic'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     const { userId } = await request.json()
 
-    const supabase = await createClient()
-
     // 認証チェック（iOSアプリからのBearerトークンまたはWebのセッション）
     const authHeader = request.headers.get('Authorization')
     let authenticatedUserId: string | null = null
 
+    // Admin権限を持つクライアント（トークン検証とDB操作用、RLS回避）
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabaseAdmin = createAdminClient(supabaseUrl, serviceRoleKey)
+
     if (authHeader?.startsWith('Bearer ')) {
-      // iOSアプリ: Bearerトークンを検証
+      // iOSアプリまたはWebアプリ: Bearerトークンを検証
       const token = authHeader.substring(7)
-      const { data: { user }, error } = await supabase.auth.getUser(token)
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
 
       if (error || !user) {
+        console.error('Bearer token validation failed:', error?.message)
         return NextResponse.json(
           { error: '認証に失敗しました', name: '名無しさん' },
           { status: 401 }
@@ -27,6 +32,7 @@ export async function POST(request: Request) {
       authenticatedUserId = user.id
     } else {
       // Webアプリ: クッキーベースのセッション
+      const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
@@ -48,9 +54,9 @@ export async function POST(request: Request) {
     }
 
     // Claude APIでユーモアのある名前を生成
-    const client = new Anthropic()
+    const client = createAnthropicClient()
     const message = await client.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 50,
       messages: [{
         role: 'user',
@@ -71,28 +77,41 @@ export async function POST(request: Request) {
       ? message.content[0].text.trim()
       : '名無しさん'
 
-    // 生成した名前をプロフィールに保存（認証済みユーザーのIDを使用）
-    // まずupdateを試み、プロフィールが存在しない場合はリトライ
+    console.log(`🎭 Generated name: "${generatedName}" for user: ${authenticatedUserId}`)
+
+    // 生成した名前をプロフィールに保存（Admin権限でRLS回避）
+    // .select()で実際に更新された行を確認
     let saved = false
     for (let attempt = 0; attempt < 3; attempt++) {
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({ display_name: generatedName })
         .eq('id', authenticatedUserId)
+        .select('id')
 
       if (updateError) {
         console.error(`Profile update error (attempt ${attempt + 1}):`, updateError)
-      } else {
+      } else if (data && data.length > 0) {
+        // 実際に行が更新された
         saved = true
+        console.log(`✅ Name saved successfully for user: ${authenticatedUserId}`)
         break
+      } else {
+        // プロフィールが存在しない（0行更新）
+        console.log(`⏳ Profile not found, retry ${attempt + 1}/3 for user: ${authenticatedUserId}`)
       }
       // DBトリガーによるプロフィール作成を待つ
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
+    if (!saved) {
+      console.error(`❌ Failed to save name after 3 attempts for user: ${authenticatedUserId}`)
+    }
+
     return NextResponse.json({ name: generatedName, saved })
   } catch (error) {
-    console.error('Name generation error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Name generation error:', errorMessage)
     return NextResponse.json(
       { error: '名前の生成に失敗しました', name: '名無しさん' },
       { status: 500 }

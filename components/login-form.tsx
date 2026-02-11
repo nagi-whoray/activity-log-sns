@@ -43,6 +43,8 @@ export function LoginForm() {
         setAgreedToTerms(false)
         setSuccessMessage('確認メールを送信しました。メールを確認後、ログインしてください。')
         setPassword('')
+        setLoading(false)
+        setLoadingMessage(null)
       } else {
         setLoadingMessage('ログイン中...')
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -101,7 +103,6 @@ export function LoginForm() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'エラーが発生しました'
       setError(message)
-    } finally {
       setLoading(false)
       setLoadingMessage(null)
     }
