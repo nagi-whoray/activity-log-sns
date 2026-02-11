@@ -62,6 +62,7 @@ export interface ActivityLogData {
     content: string
     created_at: string
     user_id: string
+    parent_id: string | null
     profiles: {
       id: string
       username: string

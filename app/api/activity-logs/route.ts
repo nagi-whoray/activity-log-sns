@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
         content,
         created_at,
         user_id,
+        parent_id,
         profiles (
           id,
           username,

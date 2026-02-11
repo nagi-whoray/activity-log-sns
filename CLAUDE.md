@@ -41,7 +41,7 @@ components/
   ├── activity-log-form.tsx    # [Client] 活動ログ/達成ログ投稿フォーム（ログタイプ選択・画像アップロード対応）
   ├── activity-log-list.tsx    # [Client] 活動ログ一覧表示（フォローボタン・画像表示対応）
   ├── activity-calendar.tsx    # [Client] 投稿カレンダー（月間表示・日付フィルタ・達成ログ金色ハイライト対応）
-  ├── comment-section.tsx      # [Client] コメント機能
+  ├── comment-section.tsx      # [Client] コメント機能（返信コメント対応、1階層ネスト）
   ├── follow-button.tsx        # [Client] フォロー/フォロー解除ボタン
   ├── notification-button.tsx  # [Client] 通知ベルボタン（未読バッジ・30秒ポーリング）
   ├── notification-dropdown.tsx # [Client] 通知ドロップダウン一覧
@@ -151,10 +151,17 @@ id              UUID PRIMARY KEY
 activity_log_id UUID (activity_logs参照)
 user_id         UUID (profiles参照)
 content         TEXT NOT NULL
-parent_id       UUID (comments参照、ネスト用)
+parent_id       UUID (comments参照) ON DELETE CASCADE  -- 返信コメントの親（1階層のみ）
 created_at      TIMESTAMP
 updated_at      TIMESTAMP
 ```
+
+**返信コメント機能**:
+- `parent_id`がNULLの場合は通常のコメント、UUIDが設定されている場合は返信コメント
+- **1階層ネスト**のみ（Twitter/X方式）: 返信への返信は元の親コメントに紐づく
+- 親コメント削除時は子の返信もCASCADE削除される
+- 返信時の通知は`comment_reply`タイプで返信先コメント主にのみ送信（投稿者には送信しない）
+- 1階層強制ロジック: `parentId = replyingTo?.parent_id || replyingTo?.id || null`
 
 #### テーブル: follows（フォロー関係）
 ```sql
@@ -238,7 +245,7 @@ UNIQUE(comment_id, user_id)  -- 同じコメントに複数回いいね不可
 id              UUID PRIMARY KEY
 user_id         UUID (profiles参照) NOT NULL  -- 受信者
 actor_id        UUID (profiles参照) NOT NULL  -- 実行者
-type            TEXT NOT NULL  -- 'like' | 'comment' | 'follow' | 'comment_like'
+type            TEXT NOT NULL  -- 'like' | 'comment' | 'follow' | 'comment_like' | 'comment_reply'
 activity_log_id UUID (activity_logs参照)  -- nullable
 comment_id      UUID (comments参照)        -- nullable
 is_read         BOOLEAN DEFAULT FALSE NOT NULL
@@ -253,6 +260,7 @@ UNIQUE(user_id, actor_id, type, activity_log_id, comment_id)  -- 重複防止
 | `comment` | コメント通知 |
 | `follow` | フォロー通知 |
 | `comment_like` | コメントいいね通知 |
+| `comment_reply` | コメント返信通知 |
 
 #### RLS (Row Level Security)
 - **profiles**: 全員が閲覧可能、本人のみ更新可能
@@ -432,6 +440,8 @@ SUPABASE_SERVICE_ROLE_KEY=    # アカウント削除機能に必要（サーバ
 5. ~~**コメント機能**~~ ✅ 実装済み
    - `comments`テーブル追加
    - コメント投稿・削除機能
+   - 返信コメント機能（1階層ネスト、`parent_id`使用）
+   - 返信通知（`comment_reply`タイプ）
 
 6. ~~**無限スクロール**~~ ✅ 実装済み
    - Intersection Observer使用

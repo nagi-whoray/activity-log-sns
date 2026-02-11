@@ -100,6 +100,7 @@ export default async function UserProfilePage({
         content,
         created_at,
         user_id,
+        parent_id,
         profiles (
           id,
           username,

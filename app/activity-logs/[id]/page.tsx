@@ -42,6 +42,7 @@ export default async function ActivityLogDetailPage({
         content,
         created_at,
         user_id,
+        parent_id,
         profiles (
           id,
           username,

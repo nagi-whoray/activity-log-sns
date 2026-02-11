@@ -62,12 +62,17 @@ interface ActivityLog {
     content: string
     created_at: string
     user_id: string
+    parent_id: string | null
     profiles: {
       id: string
       username: string
       display_name: string | null
       avatar_url: string | null
     } | null
+    comment_likes: {
+      id: string
+      user_id: string
+    }[]
   }[]
 }
 

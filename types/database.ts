@@ -29,7 +29,7 @@ export const LOG_TYPE_LABELS: Record<LogType, string> = {
 }
 
 // 通知タイプの型
-export type NotificationType = 'like' | 'comment' | 'follow' | 'comment_like'
+export type NotificationType = 'like' | 'comment' | 'follow' | 'comment_like' | 'comment_reply'
 
 // 通知タイプの日本語ラベル
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
@@ -37,6 +37,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   comment: 'コメント',
   follow: 'フォロー',
   comment_like: 'コメントいいね',
+  comment_reply: 'コメント返信',
 }
 
 export interface Database {
