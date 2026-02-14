@@ -1,4 +1,4 @@
-import { createAnthropicClient } from '@/lib/anthropic'
+import { createAnthropicClient, createMessageWithFallback } from '@/lib/anthropic'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
@@ -53,10 +53,9 @@ export async function POST(request: Request) {
       )
     }
 
-    // Claude APIでユーモアのある名前を生成
+    // Claude APIでユーモアのある名前を生成（フォールバック付き）
     const client = createAnthropicClient()
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    const message = await createMessageWithFallback(client, {
       max_tokens: 50,
       messages: [{
         role: 'user',
